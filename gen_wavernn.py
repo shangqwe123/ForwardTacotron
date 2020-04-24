@@ -21,7 +21,7 @@ def gen_testset(model: WaveRNN, test_set, samples, batched, target, overlap, sav
         x = x[0].numpy()
 
         bits = 16 if hp.voc_mode == 'MOL' else hp.bits
-
+        x_in = label_2_float(x, bits)
         if hp.mu_law and hp.voc_mode != 'MOL':
             x = decode_mu_law(x, 2**bits, from_labels=True)
         else:
@@ -30,9 +30,12 @@ def gen_testset(model: WaveRNN, test_set, samples, batched, target, overlap, sav
         save_wav(x, save_path/f'{k}k_steps_{i}_target.wav')
 
         batch_str = f'gen_batched_target{target}_overlap{overlap}' if batched else 'gen_NOT_BATCHED'
-        save_str = str(save_path/f'{k}k_steps_{i}_{batch_str}.wav')
+        save_str = str(save_path/f'{k}k_steps_t_{i}_{batch_str}.wav')
+        save_str_2 = str(save_path/f'{k}k_steps_nt_{i}_{batch_str}.wav')
 
-        _ = model.generate(m, save_str, batched, target, overlap, hp.mu_law)
+        x_in = torch.tensor(x_in).float()
+        _ = model.generate(m, save_str_2, batched, target, overlap, hp.mu_law)
+        _ = model.generate(m, save_str, batched, target, overlap, hp.mu_law, x_in=x_in)
 
 
 def gen_from_file(model: WaveRNN, load_path: Path, save_path: Path, batched, target, overlap):

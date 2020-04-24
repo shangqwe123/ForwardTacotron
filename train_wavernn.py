@@ -109,16 +109,16 @@ def voc_train_loop(paths: Paths, model: WaveRNN, loss_func, optimizer, train_set
             if device.type == 'cuda' and torch.cuda.device_count() > 1:
                 y_hat = data_parallel_workaround(model, x, m)
             else:
-                y_hat = model(x, m)
+                y_hat = model.forward_2(x, m)
 
             if model.mode == 'RAW':
+                #y_hat = y_hat.transpose(1, 2).unsqueeze(-1)
                 y_hat = y_hat.transpose(1, 2).unsqueeze(-1)
 
             elif model.mode == 'MOL':
                 y = y.float()
 
             y = y.unsqueeze(-1)
-
 
             loss = loss_func(y_hat, y)
 

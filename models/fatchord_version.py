@@ -166,9 +166,52 @@ class WaveRNN(nn.Module):
         x = F.relu(self.fc2(x))
         return self.fc3(x)
 
-    def generate(self, mels, save_path: Union[str, Path], batched, target, overlap, mu_law):
+    def forward_2(self, x_in, mels):
+        device = next(self.parameters()).device  # use same device as parameters
+        self.step += 1
+        output = []
+        rnn1 = self.get_gru_cell(self.rnn1)
+        rnn2 = self.get_gru_cell(self.rnn2)
+        mels, aux = self.upsample(mels)
+        b_size, seq_len, _ = mels.size()
+        h1 = torch.zeros(b_size, self.rnn_dims, device=device)
+        h2 = torch.zeros(b_size, self.rnn_dims, device=device)
+        x = x_in[:, 0:1]
+        d = self.aux_dims
+        aux_split = [aux[:, :, d * i:d * (i + 1)] for i in range(4)]
+        for i in range(seq_len):
+            m_t = mels[:, i, :]
+            a1_t, a2_t, a3_t, a4_t = \
+                (a[:, i, :] for a in aux_split)
+            x = torch.cat([x, m_t, a1_t], dim=1)
+            x = self.I(x)
+            h1 = rnn1(x, h1)
+
+            x = x + h1
+            inp = torch.cat([x, a2_t], dim=1)
+            h2 = rnn2(inp, h2)
+
+            x = x + h2
+            x = torch.cat([x, a3_t], dim=1)
+            x = F.relu(self.fc1(x))
+
+            x = torch.cat([x, a4_t], dim=1)
+            x = F.relu(self.fc2(x))
+
+            logits = self.fc3(x)
+            #posterior = F.softmax(logits, dim=1)
+            #distrib = torch.distributions.Categorical(posterior)
+            #sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
+            output.append(logits)
+            x = x_in[:, i+1:i+2]
+
+        output = torch.stack(output).transpose(0, 1)
+        return output
+
+    def generate(self, mels, save_path: Union[str, Path], batched, target, overlap, mu_law, x_in=None):
         self.eval()
 
+        batched = False
         device = next(self.parameters()).device  # use same device as parameters
 
         mu_law = mu_law if self.mode == 'RAW' else False
@@ -182,6 +225,7 @@ class WaveRNN(nn.Module):
 
             mels = torch.as_tensor(mels, device=device)
             wave_len = (mels.size(-1) - 1) * self.hop_length
+            #mels, aux = self.upsample(mels)
             mels = self.pad_tensor(mels.transpose(1, 2), pad=self.pad, side='both')
             mels, aux = self.upsample(mels.transpose(1, 2))
 
@@ -193,11 +237,16 @@ class WaveRNN(nn.Module):
 
             h1 = torch.zeros(b_size, self.rnn_dims, device=device)
             h2 = torch.zeros(b_size, self.rnn_dims, device=device)
-            x = torch.zeros(b_size, 1, device=device)
+            if x_in is None:
+                x = torch.zeros(b_size, 1, device=device)
+            else:
+                x = x_in[0:1].unsqueeze(-1)
+            #x = x_in[0:1].unsqueeze(-1)
 
             d = self.aux_dims
             aux_split = [aux[:, :, d * i:d * (i + 1)] for i in range(4)]
 
+            seq_len = seq_len // 5
             for i in range(seq_len):
 
                 m_t = mels[:, i, :]
@@ -234,7 +283,12 @@ class WaveRNN(nn.Module):
 
                     sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
                     output.append(sample)
-                    x = sample.unsqueeze(-1)
+                    if x_in is None:
+                        x = sample.unsqueeze(-1)
+                    else:
+                        #print(f'sample shape {sample.unsqueeze(-1).shape} x_in shape {x_in[i:i+1].unsqueeze(-1).shape}')
+                        x = x_in[i+1:i+2].unsqueeze(-1)
+                        #x = sample.unsqueeze(-1)
                 else:
                     raise RuntimeError("Unknown model mode value - ", self.mode)
 
