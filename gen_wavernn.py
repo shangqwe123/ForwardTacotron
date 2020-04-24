@@ -32,6 +32,7 @@ def gen_testset(model: WaveRNN, test_set, samples, batched, target, overlap, sav
         batch_str = f'gen_batched_target{target}_overlap{overlap}' if batched else 'gen_NOT_BATCHED'
         save_str = str(save_path/f'{k}k_steps_t_{i}_{batch_str}.wav')
         save_str_2 = str(save_path/f'{k}k_steps_nt_{i}_{batch_str}.wav')
+        device = next(model.parameters()).device  # use same device as parameters
 
         x_in = torch.tensor(x_in).float().to(device)
         _ = model.generate(m, save_str_2, batched, target, overlap, hp.mu_law)
