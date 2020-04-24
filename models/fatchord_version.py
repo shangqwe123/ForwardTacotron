@@ -1,3 +1,5 @@
+from random import random
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -199,11 +201,15 @@ class WaveRNN(nn.Module):
             x = F.relu(self.fc2(x))
 
             logits = self.fc3(x)
-            #posterior = F.softmax(logits, dim=1)
-            #distrib = torch.distributions.Categorical(posterior)
-            #sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
+            posterior = F.softmax(logits, dim=1)
+            distrib = torch.distributions.Categorical(posterior)
+            sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
             output.append(logits)
-            x = x_in[:, i+1:i+2]
+            r = torch.LongTensor(1).random_(0, 100)
+            if float(r) < 30:
+                x = sample.unsqueeze(-1)
+            else:
+                x = x_in[:, i+1:i+2]
 
         output = torch.stack(output).transpose(0, 1)
         return output
