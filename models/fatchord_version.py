@@ -99,7 +99,7 @@ class WaveRNN(nn.Module):
         if self.mode == 'RAW':
             self.n_classes = 2 ** bits
         elif self.mode == 'MOL':
-            self.n_classes = 30
+            self.n_classes = 1
         else:
             RuntimeError("Unknown model mode value - ", self.mode)
 
@@ -224,10 +224,12 @@ class WaveRNN(nn.Module):
                 logits = self.fc3(x)
 
                 if self.mode == 'MOL':
-                    sample = sample_from_discretized_mix_logistic(logits.unsqueeze(0).transpose(1, 2))
-                    output.append(sample.view(-1))
+                    #sample = logits.squeeze()#sample_from_discretized_mix_logistic(logits.unsqueeze(0).transpose(1, 2))
+                    sample = logits
+                    output.append(sample)
                     # x = torch.FloatTensor([[sample]]).cuda()
-                    x = sample.transpose(0, 1)
+                    x = sample
+                    #print(sample)
 
                 elif self.mode == 'RAW':
                     posterior = F.softmax(logits, dim=1)
@@ -249,10 +251,12 @@ class WaveRNN(nn.Module):
         if mu_law:
             output = decode_mu_law(output, self.n_classes, False)
 
-        if batched:
+        if batched and not self.mode == 'MOL':
             output = self.xfade_and_unfold(output, target, overlap)
         else:
-            output = output[0]
+            output = output[0].squeeze()
+        print(f'output shape {output.shape}')
+
 
         # Fade-out at the end to avoid signal cutting out suddenly
         fade_out = np.linspace(1, 0, 20 * self.hop_length)
