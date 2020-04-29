@@ -15,7 +15,7 @@ from utils.checkpoints import save_checkpoint
 from utils.dataset import get_tts_datasets, get_vocoder_datasets
 from utils.decorators import ignore_exception
 from utils.display import stream, simple_table, plot_mel, plot_attention
-from utils.distribution import discretized_mix_logistic_loss
+from utils.distribution import discretized_mix_logistic_loss, STFTLoss
 from utils.dsp import reconstruct_waveform, rescale_mel, np_now, decode_mu_law, label_2_float, raw_melspec
 from utils.files import unpickle_binary, pickle_binary, get_files
 from utils.paths import Paths
@@ -26,7 +26,7 @@ class VocTrainer:
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
         self.writer = SummaryWriter(log_dir=paths.voc_log, comment='v1')
-        self.loss_func = F.cross_entropy if hp.voc_mode == 'RAW' else discretized_mix_logistic_loss
+        self.loss_func = F.cross_entropy if hp.voc_mode == 'RAW' else STFTLoss()
         path_top_k = paths.voc_top_k/'top_k.pkl'
         if os.path.exists(path_top_k):
             self.top_k_models = unpickle_binary(path_top_k)
