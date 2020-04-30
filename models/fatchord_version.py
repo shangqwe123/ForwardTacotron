@@ -177,7 +177,7 @@ class WaveRNN(nn.Module):
         b_size, seq_len, _ = mels.size()
         h1 = torch.zeros(b_size, self.rnn_dims, device=device)
         h2 = torch.zeros(b_size, self.rnn_dims, device=device)
-        x = x_in[:, 0:1]
+        x = torch.zeros(b_size, 1, device=device)
         d = self.aux_dims
         aux_split = [aux[:, :, d * i:d * (i + 1)] for i in range(4)]
         for i in range(seq_len):
