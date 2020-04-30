@@ -158,9 +158,9 @@ class VocTrainer:
 
             gen_wavs.append(gen_wav)
             y_mel = raw_melspec(x.squeeze())
-            y_mel = torch.tensor(y_mel).to(device)
+            y_mel = torch.tensor(y_mel).unsqueeze(0).to(device)
             y_hat_mel = raw_melspec(gen_wav)
-            y_hat_mel = torch.tensor(y_hat_mel).to(device)
+            y_hat_mel = torch.tensor(y_hat_mel).unsqueeze(0).to(device)
             loss = F.l1_loss(y_hat_mel, y_mel)
             mel_losses.append(loss.item())
 
