@@ -167,6 +167,50 @@ class WaveRNN(nn.Module):
         x = F.relu(self.fc2(x))
         return self.fc3(x)
 
+    def forward_2(self, x_in, mels):
+        device = next(self.parameters()).device  # use same device as parameters
+        self.step += 1
+        output = []
+        rnn1 = self.get_gru_cell(self.rnn1)
+        rnn2 = self.get_gru_cell(self.rnn2)
+        mels, aux = self.upsample(mels)
+        b_size, seq_len, _ = mels.size()
+        h1 = torch.zeros(b_size, self.rnn_dims, device=device)
+        h2 = torch.zeros(b_size, self.rnn_dims, device=device)
+        x = x_in[:, 0:1]
+        d = self.aux_dims
+        aux_split = [aux[:, :, d * i:d * (i + 1)] for i in range(4)]
+        for i in range(seq_len):
+            m_t = mels[:, i, :]
+            a1_t, a2_t, a3_t, a4_t = \
+                (a[:, i, :] for a in aux_split)
+            x = torch.cat([x, m_t, a1_t], dim=1)
+            x = self.I(x)
+            h1 = rnn1(x, h1)
+
+            x = x + h1
+            inp = torch.cat([x, a2_t], dim=1)
+            h2 = rnn2(inp, h2)
+
+            x = x + h2
+            x = torch.cat([x, a3_t], dim=1)
+            x = F.relu(self.fc1(x))
+
+            x = torch.cat([x, a4_t], dim=1)
+            x = F.relu(self.fc2(x))
+
+            logits = self.fc3(x)
+            #posterior = F.softmax(logits, dim=1)
+            #distrib = torch.distributions.Categorical(posterior)
+            #sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
+            sample = logits
+            output.append(sample)
+            #r = torch.LongTensor(1).random_(0, 100)
+            x = sample
+
+        output = torch.stack(output).transpose(0, 1)
+        return output
+
     def generate(self, mels, save_path: Union[str, Path], batched, target, overlap, mu_law, silent=False):
         self.eval()
 

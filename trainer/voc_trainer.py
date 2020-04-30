@@ -69,7 +69,7 @@ class VocTrainer:
                 model.train()
                 x, m, y = x.to(device), m.to(device), y.to(device)
 
-                y_hat = model(x, m)
+                y_hat = model.forward_2(x, m)
                 if model.mode == 'RAW':
                     y_hat = y_hat.transpose(1, 2).unsqueeze(-1)
                 elif model.mode == 'MOL':
