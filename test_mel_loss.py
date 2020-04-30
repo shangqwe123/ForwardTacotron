@@ -26,8 +26,8 @@ if __name__ == '__main__':
    hp.configure(args.hp_file)  # Load hparams from file
 
    wav_1 = load_wav('/Users/cschaefe/Downloads/target.wav')
-   wav_2 = load_wav('/Users/cschaefe/Downloads/individualAudio_1.wav')
-   wav_3 = load_wav('/Users/cschaefe/Downloads/individualAudio.wav')
+   wav_2 = load_wav('/Users/cschaefe/Downloads/individualAudio.wav')
+   wav_3 = load_wav('/Users/cschaefe/Downloads/individualAudio_2.wav')
 
    mel_1 = raw_melspec(wav_1)
    mel_2 = raw_melspec(wav_2)
