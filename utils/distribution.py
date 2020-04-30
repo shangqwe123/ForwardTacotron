@@ -265,8 +265,9 @@ class STFTLoss(torch.nn.Module):
         self.stft = TacotronSTFT()
 
     def forward(self, y_hat, y):
-        y_hat_s = self.stft.melspectrogram(y_hat)
-        y_s = self.stft.melspectrogram(y)
+        #print(f'y_hat shape {y_hat.shape} y shape {y.shape}')
+        y_hat_s = self.stft.melspectrogram(y_hat.squeeze())
+        y_s = self.stft.melspectrogram(y.squeeze())
         loss = F.l1_loss(y_hat_s, y_s)
         return loss
 

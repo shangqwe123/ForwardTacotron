@@ -62,7 +62,7 @@ class VocTrainer:
         loss_avg = Averager()
         duration_avg = Averager()
         device = next(model.parameters()).device  # use same device as model parameters
-
+        self.loss_func = self.loss_func.to(device)
         for e in range(1, epochs + 1):
             for i, (x, y, m) in enumerate(session.train_set, 1):
                 start = time.time()
