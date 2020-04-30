@@ -169,7 +169,8 @@ class WaveRNN(nn.Module):
 
     def forward_2(self, x_in, mels):
         device = next(self.parameters()).device  # use same device as parameters
-        self.step += 1
+        if self.training:
+            self.step += 1
         output = []
         rnn1 = self.get_gru_cell(self.rnn1)
         rnn2 = self.get_gru_cell(self.rnn2)
