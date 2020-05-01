@@ -112,7 +112,7 @@ class WaveRNN(nn.Module):
         self.sample_rate = sample_rate
 
         self.upsample = UpsampleNetwork(feat_dims, upsample_factors, compute_dims, res_blocks, res_out_dims, pad)
-        self.I = nn.Linear(feat_dims + self.aux_dims + 1, rnn_dims)
+        self.I = nn.Linear(feat_dims + self.aux_dims, rnn_dims)
 
         self.rnn1 = nn.GRU(rnn_dims, rnn_dims, batch_first=True)
         self.rnn2 = nn.GRU(rnn_dims + self.aux_dims, rnn_dims, batch_first=True)
@@ -128,7 +128,7 @@ class WaveRNN(nn.Module):
         # Avoid fragmentation of RNN parameters and associated warning
         self._flatten_parameters()
 
-    def forward(self, x, mels):
+    def forward(self, x_in, mels):
         device = next(self.parameters()).device  # use same device as parameters
 
         # Although we `_flatten_parameters()` on init, when using DataParallel
@@ -138,7 +138,7 @@ class WaveRNN(nn.Module):
 
         if self.training:
             self.step += 1
-        bsize = x.size(0)
+        bsize = x_in.size(0)
         h1 = torch.zeros(1, bsize, self.rnn_dims, device=device)
         h2 = torch.zeros(1, bsize, self.rnn_dims, device=device)
         mels, aux = self.upsample(mels)
@@ -149,7 +149,7 @@ class WaveRNN(nn.Module):
         a3 = aux[:, :, aux_idx[2]:aux_idx[3]]
         a4 = aux[:, :, aux_idx[3]:aux_idx[4]]
 
-        x = torch.cat([x.unsqueeze(-1), mels, a1], dim=2)
+        x = torch.cat([mels, a1], dim=2)
         x = self.I(x)
         res = x
         x, _ = self.rnn1(x, h1)
@@ -251,7 +251,7 @@ class WaveRNN(nn.Module):
                 a1_t, a2_t, a3_t, a4_t = \
                     (a[:, i, :] for a in aux_split)
 
-                x = torch.cat([x, m_t, a1_t], dim=1)
+                x = torch.cat([m_t, a1_t], dim=1)
                 x = self.I(x)
                 h1 = rnn1(x, h1)
 
@@ -282,7 +282,6 @@ class WaveRNN(nn.Module):
 
                     sample = 2 * distrib.sample().float() / (self.n_classes - 1.) - 1.
                     output.append(sample)
-                    x = sample.unsqueeze(-1)
                 else:
                     raise RuntimeError("Unknown model mode value - ", self.mode)
 
