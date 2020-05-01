@@ -253,7 +253,7 @@ class TacotronSTFT(torch.nn.Module):
         magnitudes, phases = self.stft_fn.transform(y)
         #magnitudes = magnitudes.data
         mel_output = torch.matmul(self.mel_basis, magnitudes)
-        #mel_output = self.spectral_normalize(mel_output)
+        mel_output = self.spectral_normalize(mel_output)
         return mel_output
         #return mel_output
 
