@@ -266,9 +266,10 @@ class STFTLoss(torch.nn.Module):
 
     def forward(self, y_hat, y):
         #print(f'y_hat shape {y_hat.shape} y shape {y.shape}')
+        l1_loss = F.l1_loss((y_hat, y))
         y_hat_s = self.stft.melspectrogram(y_hat.squeeze())
         y_s = self.stft.melspectrogram(y.squeeze())
-        loss = F.l1_loss(y_hat_s, y_s)
+        loss = F.l1_loss(y_hat_s, y_s) + l1_loss
         return loss
 
 if __name__ == '__main__':
