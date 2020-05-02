@@ -252,9 +252,9 @@ class TacotronSTFT(torch.nn.Module):
 
         magnitudes, phases = self.stft_fn.transform(y)
         #magnitudes = magnitudes.data
-        mel_output = torch.matmul(self.mel_basis, magnitudes)
-        mel_output = self.spectral_normalize(mel_output)
-        return mel_output
+        #mel_output = torch.matmul(self.mel_basis, magnitudes)
+        mel_output = self.spectral_normalize(magnitudes)
+        return mel_output, phases
         #return mel_output
 
 
@@ -266,10 +266,10 @@ class STFTLoss(torch.nn.Module):
 
     def forward(self, y_hat, y):
         #print(f'y_hat shape {y_hat.shape} y shape {y.shape}')
-        l1_loss = F.l1_loss(y_hat, y)
-        y_hat_s = self.stft.melspectrogram(y_hat.squeeze())
-        y_s = self.stft.melspectrogram(y.squeeze())
-        loss = F.l1_loss(y_hat_s, y_s) + l1_loss
+        #l1_loss = F.l1_loss(y_hat, y)
+        y_hat_s, y_hat_p = self.stft.melspectrogram(y_hat.squeeze())
+        y_s, y_p = self.stft.melspectrogram(y.squeeze())
+        loss = F.l1_loss(y_hat_s, y_s) + F.l1_loss(y_hat_p, y_p)
         return loss
 
 if __name__ == '__main__':
