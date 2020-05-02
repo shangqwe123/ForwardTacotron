@@ -269,8 +269,9 @@ class STFTLoss(torch.nn.Module):
         #l1_loss = F.l1_loss(y_hat, y)
         y_hat_s, y_hat_p = self.stft.melspectrogram(y_hat.squeeze())
         y_s, y_p = self.stft.melspectrogram(y.squeeze())
-        loss = F.l1_loss(y_hat_s, y_s) + F.l1_loss(y_hat_p, y_p)
-        return loss
+        loss_s = F.l1_loss(y_hat_s, y_s)
+        loss_p =  F.l1_loss(y_hat_p, y_p)
+        return loss_s + loss_p, loss_s, loss_p
 
 if __name__ == '__main__':
     import librosa

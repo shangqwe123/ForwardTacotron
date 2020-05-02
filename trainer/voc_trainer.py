@@ -76,7 +76,7 @@ class VocTrainer:
                     y = y.float()
                 y = y.unsqueeze(-1)
 
-                loss = self.loss_func(y_hat, y)
+                loss, loss_s, loss_p = self.loss_func(y_hat, y)
                 optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), hp.voc_clip_grad_norm)
@@ -102,22 +102,28 @@ class VocTrainer:
                                     name=ckpt_name, is_silent=True)
 
                 self.writer.add_scalar('Loss/train', loss, model.get_step())
+                self.writer.add_scalar('Loss/train_s', loss_s, model.get_step())
+                self.writer.add_scalar('Loss/train_p', loss_p, model.get_step())
                 self.writer.add_scalar('Params/batch_size', session.bs, model.get_step())
                 self.writer.add_scalar('Params/learning_rate', session.lr, model.get_step())
 
                 stream(msg)
 
-            val_loss = self.evaluate(model, session.val_set)
+            val_loss, val_loss_s, val_loss_p = self.evaluate(model, session.val_set)
             self.writer.add_scalar('Loss/val', val_loss, model.get_step())
+            self.writer.add_scalar('Loss/val_s', val_loss_s, model.get_step())
+            self.writer.add_scalar('Loss/val_p', val_loss_p, model.get_step())
             save_checkpoint('voc', self.paths, model, optimizer, is_silent=True)
 
             loss_avg.reset()
             duration_avg.reset()
             print(' ')
 
-    def evaluate(self, model: WaveRNN, val_set: Dataset) -> float:
+    def evaluate(self, model: WaveRNN, val_set: Dataset):
         model.eval()
         val_loss = 0
+        val_loss_s = 0
+        val_loss_p = 0
         device = next(model.parameters()).device
         for i, (x, y, m) in enumerate(val_set, 1):
             x, m, y = x.to(device), m.to(device), y.to(device)
@@ -128,9 +134,11 @@ class VocTrainer:
                 elif model.mode == 'MOL':
                     y = y.float()
                 y = y.unsqueeze(-1)
-                loss = self.loss_func(y_hat, y)
+                loss, loss_s, loss_p = self.loss_func(y_hat, y)
                 val_loss += loss.item()
-        return val_loss / len(val_set)
+                val_loss_s += loss_s.item()
+                val_loss_p += loss_p.item()
+        return val_loss / len(val_set), val_loss_s / len(val_set), val_loss_p / len(val_set)
 
     @ignore_exception
     def generate_samples(self, model: WaveRNN, session: VocSession) -> Tuple[float, list]:
