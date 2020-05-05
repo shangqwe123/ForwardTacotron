@@ -121,8 +121,15 @@ class ForwardTacotron(nn.Module):
                             channels=postnet_dims,
                             proj_channels=[postnet_dims, n_mels],
                             num_highways=highways)
+        self.postnet_2 = CBHG(K=postnet_k,
+                            in_channels=n_mels,
+                            channels=postnet_dims,
+                            proj_channels=[postnet_dims, n_mels],
+                            num_highways=highways)
+
         self.dropout = dropout
         self.post_proj = nn.Linear(2 * postnet_dims, n_mels, bias=False)
+        self.post_proj_2 = nn.Linear(2 * postnet_dims, n_mels, bias=False)
 
     def forward(self, x, mel, dur):
         if self.training:
@@ -146,9 +153,14 @@ class ForwardTacotron(nn.Module):
         x_post = self.post_proj(x_post)
         x_post = x_post.transpose(1, 2)
 
+        x_post_2 = self.postnet_2(x_post)
+        x_post_2 = self.post_proj(x_post_2)
+        x_post_2 = x_post_2.transpose(1, 2)
+
+        x_post_2 = self.pad(x_post_2, mel.size(2))
         x_post = self.pad(x_post, mel.size(2))
         x = self.pad(x, mel.size(2))
-        return x, x_post, dur_hat
+        return x, x_post, x_post_2, dur_hat
 
     def generate(self, x, alpha=1.0):
         self.eval()
@@ -173,12 +185,17 @@ class ForwardTacotron(nn.Module):
         x_post = self.post_proj(x_post)
         x_post = x_post.transpose(1, 2)
 
-        x, x_post, dur = x.squeeze(), x_post.squeeze(), dur.squeeze()
+        x_post_2 = self.postnet_2(x_post)
+        x_post_2 = self.post_proj(x_post_2)
+        x_post_2 = x_post_2.transpose(1, 2)
+
+        x, x_post, x_post_2, dur = x.squeeze(), x_post.squeeze(), x_post_2.squeeze(), dur.squeeze()
         x = x.cpu().data.numpy()
         x_post = x_post.cpu().data.numpy()
+        x_post_2 = x_post_2.cpu().data.numpy()
         dur = dur.cpu().data.numpy()
 
-        return x, x_post, dur
+        return x, x_post, x_post_2, dur
 
     def pad(self, x, max_len):
         x = x[:, :, :max_len]

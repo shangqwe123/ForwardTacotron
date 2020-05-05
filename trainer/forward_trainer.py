@@ -60,18 +60,19 @@ class ForwardTrainer:
                 model.train()
                 x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
 
-                m1_hat, m2_hat, dur_hat = model(x, m, dur)
+                m1_hat, m2_hat, m3_hat, dur_hat = model(x, m, dur)
 
                 m1_loss = self.l1_loss(m1_hat, m, lens)
                 m2_loss = self.l1_loss(m2_hat, m, lens)
+                m3_loss = self.l1_loss(m3_hat, m, lens)
                 dur_loss = F.l1_loss(dur_hat, dur)
 
-                loss = m1_loss + m2_loss + dur_loss
+                loss = m1_loss + m2_loss + m3_loss + dur_loss
                 optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), hp.tts_clip_grad_norm)
                 optimizer.step()
-                m_loss_avg.add(m1_loss.item() + m2_loss.item())
+                m_loss_avg.add(m1_loss.item() + m2_loss.item() + m3_loss.item())
                 dur_loss_avg.add(dur_loss.item())
                 step = model.get_step()
                 k = step // 1000
@@ -113,11 +114,12 @@ class ForwardTrainer:
         for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
             x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
             with torch.no_grad():
-                m1_hat, m2_hat, dur_hat = model(x, m, dur)
+                m1_hat, m2_hat, m3_hat, dur_hat = model(x, m, dur)
                 m1_loss = self.l1_loss(m1_hat, m, lens)
                 m2_loss = self.l1_loss(m2_hat, m, lens)
+                m3_loss = self.l1_loss(m3_hat, m, lens)
                 dur_loss = F.l1_loss(dur_hat, dur)
-                m_val_loss += m1_loss.item() + m2_loss.item()
+                m_val_loss += m1_loss.item() + m2_loss.item() + m3_loss.item()
                 dur_val_loss += dur_loss.item()
         return m_val_loss / len(val_set), dur_val_loss / len(val_set)
 
@@ -128,21 +130,25 @@ class ForwardTrainer:
         x, m, ids, lens, dur = session.val_sample
         x, m, dur = x.to(device), m.to(device), dur.to(device)
 
-        m1_hat, m2_hat, dur_hat = model(x, m, dur)
+        m1_hat, m2_hat, m3_hat, dur_hat = model(x, m, dur)
         m1_hat = np_now(m1_hat)[0, :600, :]
         m2_hat = np_now(m2_hat)[0, :600, :]
+        m3_hat = np_now(m3_hat)[0, :600, :]
         m = np_now(m)[0, :600, :]
 
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)
+        m3_hat_fig = plot_mel(m3_hat)
         m_fig = plot_mel(m)
 
         self.writer.add_figure('Ground_Truth_Aligned/target', m_fig, model.step)
         self.writer.add_figure('Ground_Truth_Aligned/linear', m1_hat_fig, model.step)
         self.writer.add_figure('Ground_Truth_Aligned/postnet', m2_hat_fig, model.step)
+        self.writer.add_figure('Ground_Truth_Aligned/postnet2', m3_hat_fig, model.step)
 
-        m1_hat, m2_hat, m = rescale_mel(m1_hat), rescale_mel(m2_hat), rescale_mel(m)
+        m1_hat, m2_hat, m3_hat, m = rescale_mel(m1_hat), rescale_mel(m2_hat), rescale_mel(m3_hat), rescale_mel(m)
         m2_hat_wav = reconstruct_waveform(m2_hat)
+        m3_hat_wav = reconstruct_waveform(m3_hat)
         target_wav = reconstruct_waveform(m)
 
         self.writer.add_audio(
@@ -151,21 +157,30 @@ class ForwardTrainer:
         self.writer.add_audio(
             tag='Ground_Truth_Aligned/postnet_wav', snd_tensor=m2_hat_wav,
             global_step=model.step, sample_rate=hp.sample_rate)
+        self.writer.add_audio(
+            tag='Ground_Truth_Aligned/postnet2_wav', snd_tensor=m3_hat_wav,
+            global_step=model.step, sample_rate=hp.sample_rate)
 
-        m1_hat, m2_hat, dur_hat = model.generate(x[0].tolist())
-        m1_hat, m2_hat = rescale_mel(m1_hat), rescale_mel(m2_hat)
+        m1_hat, m2_hat, m3_hat, dur_hat = model.generate(x[0].tolist())
+        m1_hat, m2_hat, m3_hat = rescale_mel(m1_hat), rescale_mel(m2_hat), rescale_mel(m3_hat)
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)
+        m3_hat_fig = plot_mel(m3_hat)
 
         self.writer.add_figure('Generated/target', m_fig, model.step)
         self.writer.add_figure('Generated/linear', m1_hat_fig, model.step)
         self.writer.add_figure('Generated/postnet', m2_hat_fig, model.step)
+        self.writer.add_figure('Generated/postnet2', m3_hat_fig, model.step)
 
         m2_hat_wav = reconstruct_waveform(m2_hat)
+        m3_hat_wav = reconstruct_waveform(m3_hat)
 
         self.writer.add_audio(
             tag='Generated/target_wav', snd_tensor=target_wav,
             global_step=model.step, sample_rate=hp.sample_rate)
         self.writer.add_audio(
             tag='Generated/postnet_wav', snd_tensor=m2_hat_wav,
+            global_step=model.step, sample_rate=hp.sample_rate)
+        self.writer.add_audio(
+            tag='Generated/postnet2_wav', snd_tensor=m3_hat_wav,
             global_step=model.step, sample_rate=hp.sample_rate)
