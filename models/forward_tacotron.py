@@ -21,6 +21,7 @@ class LengthRegulator(nn.Module):
     @staticmethod
     def build_index(duration, x):
         duration[duration < 0] = 0
+        duration = duration
         tot_duration = duration.cumsum(1).detach().cpu().numpy().astype('int')
         max_duration = int(tot_duration.max().item())
         index = np.zeros([x.shape[0], max_duration, x.shape[2]], dtype='long')
@@ -61,7 +62,7 @@ class DurationPredictor(nn.Module):
         x = x.transpose(1, 2)
         x, _ = self.rnn(x)
         x = self.lin(x)
-        x = torch.relu(x)
+        #x = torch.relu(x)
         return x / alpha
 
 
