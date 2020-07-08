@@ -66,10 +66,12 @@ if __name__ == '__main__':
     print('Using device:', device)
 
     # Instantiate Forward TTS Model
-    print('\nInitialising Forward TTS Model...\n')
+    print('\nInitialising Duration Model...\n')
     model = DurationPredictor(embed_dims=hp.forward_embed_dims,
-                            num_chars=len(phonemes),
-                              conv_dims=hp.durpred_conv_dims, rnn_dims=hp.durpred_rnn_dims, dropout=hp.durpred_dropout).to(device)
+                              num_chars=len(phonemes),
+                              conv_dims=hp.forward_durpred_conv_dims,
+                              rnn_dims=hp.forward_durpred_rnn_dims,
+                              dropout=hp.forward_durpred_dropout).to(device)
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])

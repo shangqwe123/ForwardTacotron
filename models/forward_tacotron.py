@@ -54,6 +54,7 @@ class DurationPredictor(nn.Module):
         self.rnn = nn.GRU(conv_dims, rnn_dims, batch_first=True, bidirectional=True)
         self.lin = nn.Linear(2 * rnn_dims, 1)
         self.dropout = dropout
+        self.register_buffer('step', torch.zeros(1, dtype=torch.long))
 
     def forward(self, x, alpha=1.0):
         x = self.embedding(x)
@@ -64,8 +65,27 @@ class DurationPredictor(nn.Module):
         x = x.transpose(1, 2)
         x, _ = self.rnn(x)
         x = self.lin(x)
+        x = x.squeeze()
         return x / alpha
 
+    def get_step(self):
+        return self.step.data.item()
+
+    def load(self, path: Union[str, Path]):
+        # Use device of model params as location for loaded state
+        device = next(self.parameters()).device
+        state_dict = torch.load(path, map_location=device)
+        self.load_state_dict(state_dict, strict=False)
+
+    def save(self, path: Union[str, Path]):
+        # No optimizer argument because saving a model should not include data
+        # only relevant in the training process - it should only be properties
+        # of the model itself. Let caller take care of saving optimzier state.
+        torch.save(self.state_dict(), path)
+
+    def log(self, path, msg):
+        with open(path, 'a') as f:
+            print(msg, file=f)
 
 class BatchNormConv(nn.Module):
 
@@ -130,9 +150,9 @@ class ForwardTacotron(nn.Module):
         if self.training:
             self.step += 1
 
-        x = self.embedding(x)
         dur_hat = self.dur_pred(x)
         dur_hat = dur_hat.squeeze()
+        x = self.embedding(x)
 
         x = x.transpose(1, 2)
 
@@ -162,9 +182,9 @@ class ForwardTacotron(nn.Module):
         device = next(self.parameters()).device  # use same device as parameters
         x = torch.as_tensor(x, dtype=torch.long, device=device).unsqueeze(0)
 
-        x = self.embedding(x)
         dur = self.dur_pred(x, alpha=alpha)
         dur = dur.squeeze(2)
+        x = self.embedding(x)
 
         x = x.transpose(1, 2)
         x = self.prenet(x)

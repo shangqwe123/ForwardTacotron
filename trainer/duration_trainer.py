@@ -35,7 +35,7 @@ class DurationTrainer:
                     bs=bs, train_set=train_set, val_set=val_set)
                 self.train_session(model, optimizer, session)
 
-    def train_session(self, model: ForwardTacotron,
+    def train_session(self, model: DurationPredictor,
                       optimizer: Optimizer, session: TTSSession) -> None:
         current_step = model.get_step()
         training_steps = session.max_step - current_step
@@ -59,7 +59,7 @@ class DurationTrainer:
                 model.train()
                 x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
 
-                dur_hat = model(dur)
+                dur_hat = model(x)
 
                 dur_loss = F.l1_loss(dur_hat, dur)
 
@@ -101,7 +101,7 @@ class DurationTrainer:
         for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
             x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
             with torch.no_grad():
-                dur_hat = model(x, m, dur)
+                dur_hat = model(x)
                 dur_loss = F.l1_loss(dur_hat, dur)
                 dur_val_loss += dur_loss.item()
         return dur_val_loss / len(val_set)
