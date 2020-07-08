@@ -127,5 +127,7 @@ forward_clip_grad_norm = 1.0            # clips the gradient norm to prevent exp
 forward_checkpoint_every = 10_000        # checkpoints the model every X steps
 forward_plot_every = 1000
 
+duration_checkpoint_every = 10_000
+
 # ------------------------------------------------------------------------------------------------------------------#
 

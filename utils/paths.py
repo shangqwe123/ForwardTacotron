@@ -42,6 +42,16 @@ class Paths:
         self.forward_log = self.forward_checkpoints/'tensorboard'
         self.forward_attention = self.forward_checkpoints/'attention'
         self.forward_mel_plot = self.forward_checkpoints/'mel_plots'
+        
+        # Forward Tacotron Paths
+        self.duration_checkpoints = self.base/'checkpoints'/f'{tts_id}.duration'
+        self.duration_latest_weights = self.duration_checkpoints/'latest_weights.pyt'
+        self.duration_latest_optim = self.duration_checkpoints/'latest_optim.pyt'
+        self.duration_output = self.base/'model_outputs'/f'{tts_id}.duration'
+        self.duration_step = self.duration_checkpoints/'step.npy'
+        self.duration_log = self.duration_checkpoints/'tensorboard'
+        self.duration_attention = self.duration_checkpoints/'attention'
+        self.duration_mel_plot = self.duration_checkpoints/'mel_plots'
 
         self.create_paths()
 
@@ -61,7 +71,11 @@ class Paths:
         os.makedirs(self.forward_checkpoints, exist_ok=True)
         os.makedirs(self.forward_output, exist_ok=True)
         os.makedirs(self.forward_attention, exist_ok=True)
-        os.makedirs(self.forward_mel_plot, exist_ok=True)
+        os.makedirs(self.forward_mel_plot, exist_ok=True)        
+        os.makedirs(self.duration_checkpoints, exist_ok=True)
+        os.makedirs(self.duration_output, exist_ok=True)
+        os.makedirs(self.duration_attention, exist_ok=True)
+        os.makedirs(self.duration_mel_plot, exist_ok=True)
 
     def get_tts_named_weights(self, name):
         """Gets the path for the weights in a named tts checkpoint."""

@@ -43,10 +43,11 @@ class LengthRegulator(nn.Module):
 
 class DurationPredictor(nn.Module):
 
-    def __init__(self, in_dims, conv_dims=256, rnn_dims=64, dropout=0.5):
+    def __init__(self, num_chars, embed_dims, conv_dims=256, rnn_dims=64, dropout=0.5):
         super().__init__()
+        self.embedding = nn.Embedding(num_chars, embed_dims)
         self.convs = torch.nn.ModuleList([
-            BatchNormConv(in_dims, conv_dims, 5, activation=torch.relu),
+            BatchNormConv(embed_dims, conv_dims, 5, activation=torch.relu),
             BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
             BatchNormConv(conv_dims, conv_dims, 5, activation=torch.relu),
         ])
@@ -55,6 +56,7 @@ class DurationPredictor(nn.Module):
         self.dropout = dropout
 
     def forward(self, x, alpha=1.0):
+        x = self.embedding(x)
         x = x.transpose(1, 2)
         for conv in self.convs:
             x = conv(x)
@@ -62,7 +64,6 @@ class DurationPredictor(nn.Module):
         x = x.transpose(1, 2)
         x, _ = self.rnn(x)
         x = self.lin(x)
-        #x = torch.relu(x)
         return x / alpha
 
 
