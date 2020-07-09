@@ -60,7 +60,7 @@ class DurationTrainer:
                 model.train()
                 x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
 
-                dur_hat = model(x, dur)
+                dur_hat = model(x)
                 dur_hat = dur_hat.transpose(1, 2)
                 #print(f'dur hat shape {dur_hat.shape}')
                 #print(f'dur shape {dur.shape}')
@@ -104,7 +104,7 @@ class DurationTrainer:
         for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
             x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
             with torch.no_grad():
-                dur_hat = model(x, dur)
+                dur_hat = model(x)
                 dur_hat = dur_hat.transpose(1, 2)
                 dur_loss = F.cross_entropy(dur_hat, dur)
                 dur_val_loss += dur_loss.item()
