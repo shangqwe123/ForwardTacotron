@@ -67,7 +67,7 @@ class DurationPredictorModel(nn.Module):
         x, _ = self.decoder(x, h1)
 
         x = self.lin(x)
-        x = x.squeeze()
+        #x = x.squeeze()
         return x / alpha
 
     def generate(self, x, alpha=1.0):
