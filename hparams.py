@@ -130,7 +130,7 @@ forward_plot_every = 1000
 
 
 durpred_conv_dims = 256
-durpred_rnn_dims = 64
+durpred_rnn_dims = 256
 durpred_dropout = 0.5
 duration_checkpoint_every = 10_000
 durpred_bits = 6
