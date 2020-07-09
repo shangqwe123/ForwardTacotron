@@ -22,7 +22,7 @@ class DurationTrainer:
 
     def __init__(self, paths: Paths) -> None:
         self.paths = paths
-        self.writer = SummaryWriter(log_dir=paths.forward_log, comment='v1')
+        self.writer = SummaryWriter(log_dir=paths.duration_log, comment='v1')
         self.l1_loss = MaskedL1()
 
     def train(self, model: DurationPredictorModel, optimizer: Optimizer) -> None:
