@@ -3,10 +3,12 @@ from typing import Tuple
 
 import torch
 import torch.nn.functional as F
+from torch.nn import BCELoss
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataset import Dataset
 from torch.utils.tensorboard import SummaryWriter
 
+from models.duration_predictor import DurationPredictorModel
 from models.forward_tacotron import ForwardTacotron, DurationPredictor
 from trainer.common import Averager, TTSSession, MaskedL1, LogL1
 from utils import hparams as hp
@@ -22,9 +24,8 @@ class DurationTrainer:
         self.paths = paths
         self.writer = SummaryWriter(log_dir=paths.forward_log, comment='v1')
         self.l1_loss = MaskedL1()
-        self.log_l1_loss = LogL1()
 
-    def train(self, model: DurationPredictor, optimizer: Optimizer) -> None:
+    def train(self, model: DurationPredictorModel, optimizer: Optimizer) -> None:
         for i, session_params in enumerate(hp.forward_schedule, 1):
             lr, max_step, bs = session_params
             if model.get_step() < max_step:
@@ -35,7 +36,7 @@ class DurationTrainer:
                     bs=bs, train_set=train_set, val_set=val_set)
                 self.train_session(model, optimizer, session)
 
-    def train_session(self, model: DurationPredictor,
+    def train_session(self, model: DurationPredictorModel,
                       optimizer: Optimizer, session: TTSSession) -> None:
         current_step = model.get_step()
         training_steps = session.max_step - current_step
@@ -59,9 +60,11 @@ class DurationTrainer:
                 model.train()
                 x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
 
-                dur_hat = model(x)
-
-                dur_loss = F.l1_loss(dur_hat, dur)
+                dur_hat = model(x, dur)
+                dur_hat = dur_hat.transpose(1, 2)
+                #print(f'dur hat shape {dur_hat.shape}')
+                #print(f'dur shape {dur.shape}')
+                dur_loss = F.cross_entropy(dur_hat, dur)
 
                 loss = dur_loss
                 optimizer.zero_grad()
@@ -101,7 +104,8 @@ class DurationTrainer:
         for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
             x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
             with torch.no_grad():
-                dur_hat = model(x)
-                dur_loss = F.l1_loss(dur_hat, dur)
+                dur_hat = model(x, dur)
+                dur_hat = dur_hat.transpose(1, 2)
+                dur_loss = F.cross_entropy(dur_hat, dur)
                 dur_val_loss += dur_loss.item()
         return dur_val_loss / len(val_set)

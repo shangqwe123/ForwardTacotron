@@ -7,8 +7,8 @@ data_path = 'data/'
 
 # model ids are separate - that way you can use a new tts with an old wavernn and vice versa
 # NB: expect undefined behaviour if models were trained on different DSP settings
-voc_model_id = 'german_durtest'
-tts_model_id = 'german_durtest'
+voc_model_id = 'german_durtest_ce'
+tts_model_id = 'german_durtest_ce'
 
 # set this to True if you are only interested in WaveRNN
 ignore_tts = False
@@ -117,6 +117,7 @@ forward_rnn_dims = 512
 forward_num_highways = 4
 forward_dropout = 0.1
 
+
 # Training
 
 forward_schedule = [(1e-4, 10_000,  32),    # progressive training schedule
@@ -127,7 +128,11 @@ forward_clip_grad_norm = 1.0            # clips the gradient norm to prevent exp
 forward_checkpoint_every = 10_000        # checkpoints the model every X steps
 forward_plot_every = 1000
 
-duration_checkpoint_every = 10_000
 
+durpred_conv_dims = 256
+durpred_rnn_dims = 64
+durpred_dropout = 0.5
+duration_checkpoint_every = 10_000
+durpred_bits = 6
 # ------------------------------------------------------------------------------------------------------------------#
 

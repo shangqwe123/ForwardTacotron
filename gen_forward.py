@@ -1,5 +1,6 @@
 import torch
 
+from models.duration_predictor import DurationPredictorModel
 from models.fatchord_version import WaveRNN
 from models.forward_tacotron import ForwardTacotron
 from utils import hparams as hp
@@ -17,6 +18,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='TTS Generator')
     parser.add_argument('--input_text', '-i', type=str, help='[string] Type in something here and TTS will generate it!')
     parser.add_argument('--tts_weights', type=str, help='[string/path] Load in different FastSpeech weights')
+    parser.add_argument('--dur_weights', type=str, help='[string/path] Load in different FastSpeech weights')
     parser.add_argument('--save_attention', '-a', dest='save_attn', action='store_true', help='Save Attention Plots')
     parser.add_argument('--force_cpu', '-c', action='store_true', help='Forces CPU-only training, even when in CUDA capable environment')
     parser.add_argument('--hp_file', metavar='FILE', default='hparams.py', help='The file to use for the hyperparameters')
@@ -108,8 +110,19 @@ if __name__ == '__main__':
                                 dropout=hp.forward_dropout,
                                 n_mels=hp.num_mels).to(device)
 
+    print('\nInitialising Duration Model...\n')
+    dur_model = DurationPredictorModel(embed_dims=hp.forward_embed_dims,
+                                       num_chars=len(phonemes),
+                                       bits=hp.durpred_bits,
+                                       conv_dims=hp.durpred_conv_dims,
+                                       rnn_dims=hp.durpred_rnn_dims,
+                                       dropout=hp.durpred_dropout).to(device)
+
     tts_load_path = tts_weights if tts_weights else paths.forward_latest_weights
     tts_model.load(tts_load_path)
+
+    dur_load_path = args.dur_weights
+    dur_model.load(dur_load_path)
 
     if input_text:
         text = clean_text(input_text.strip())
@@ -119,9 +132,11 @@ if __name__ == '__main__':
             inputs = [clean_text(l.strip()) for l in f]
         inputs = [text_to_sequence(t) for t in inputs]
 
+    tts_k = tts_model.get_step() // 1000
+    dur_k = dur_model.get_step() // 1000
+
     if args.vocoder == 'wavernn':
         voc_k = voc_model.get_step() // 1000
-        tts_k = tts_model.get_step() // 1000
 
         simple_table([('Forward Tacotron', str(tts_k) + 'k'),
                     ('Vocoder Type', 'WaveRNN'),
@@ -139,8 +154,10 @@ if __name__ == '__main__':
     for i, x in enumerate(inputs, 1):
 
         print(f'\n| Generating {i}/{len(inputs)}')
-        _, m, durs = tts_model.generate(x, alpha=args.alpha)
+        durs = dur_model.generate(x, alpha=args.alpha)
         print(durs)
+
+        _, m, new_durs = tts_model.generate(x, dur=durs, alpha=args.alpha)
         if args.vocoder == 'griffinlim':
             v_type = args.vocoder
         elif args.vocoder == 'wavernn' and args.batched:
@@ -151,7 +168,7 @@ if __name__ == '__main__':
         if input_text:
             save_path = paths.forward_output/f'{input_text[:10]}_{args.alpha}_{v_type}_{tts_k}k.wav'
         else:
-            save_path = paths.forward_output/f'{i}_{v_type}_{tts_k}ko.wav'
+            save_path = paths.forward_output/f'{i}_{v_type}_tts{tts_k}_dur{dur_k}.wav'
 
         if args.vocoder == 'wavernn':
             m = torch.tensor(m).unsqueeze(0)
