@@ -217,9 +217,8 @@ class Decoder(nn.Module):
         self.attn_net = LSA(decoder_dims)
         self.attn_rnn = nn.GRUCell(decoder_dims + decoder_dims // 2, decoder_dims)
         self.rnn_input = nn.Linear(2 * decoder_dims, lstm_dims)
-        self.res_rnn1 = nn.LSTMCell(lstm_dims, lstm_dims)
-        self.res_rnn2 = nn.LSTMCell(lstm_dims, lstm_dims)
-        self.mel_proj = nn.Linear(lstm_dims, n_mels * self.max_r, bias=False)
+        self.decoder_rnn = nn.LSTMCell(lstm_dims, lstm_dims)
+        self.mel_proj = nn.Linear(lstm_dims + decoder_dims, n_mels * self.max_r, bias=False)
 
     def zoneout(self, prev, current, p=0.1):
         device = next(self.parameters()).device  # Use same device as parameters
@@ -255,20 +254,12 @@ class Decoder(nn.Module):
         x = self.rnn_input(x)
 
         # Compute first Residual RNN
-        rnn1_hidden_next, rnn1_cell = self.res_rnn1(x, (rnn1_hidden, rnn1_cell))
+        rnn1_hidden_next, rnn1_cell = self.decoder_rnn(x, (rnn1_hidden, rnn1_cell))
         if self.training:
             rnn1_hidden = self.zoneout(rnn1_hidden, rnn1_hidden_next)
         else:
             rnn1_hidden = rnn1_hidden_next
-        x = x + rnn1_hidden
-
-        # Compute second Residual RNN
-        rnn2_hidden_next, rnn2_cell = self.res_rnn2(x, (rnn2_hidden, rnn2_cell))
-        if self.training:
-            rnn2_hidden = self.zoneout(rnn2_hidden, rnn2_hidden_next)
-        else:
-            rnn2_hidden = rnn2_hidden_next
-        x = x + rnn2_hidden
+        x = torch.cat([context_vec, rnn1_hidden], dim=1)
 
         # Project Mels
         mels = self.mel_proj(x)
