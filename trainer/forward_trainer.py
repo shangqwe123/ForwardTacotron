@@ -16,6 +16,7 @@ from utils.dataset import get_tts_datasets
 from utils.decorators import ignore_exception
 from utils.display import stream, simple_table, plot_mel
 from utils.dsp import reconstruct_waveform, np_now
+from utils.dsp_old import reconstruct_waveform as reconstruct_waveform_old
 from utils.paths import Paths
 
 
@@ -164,10 +165,14 @@ class ForwardTrainer:
         self.writer.add_figure('Generated/linear', m1_hat_fig, model.step)
         self.writer.add_figure('Generated/postnet', m2_hat_fig, model.step)
 
+        m1_hat_wav = reconstruct_waveform_old(m1_hat)
         m2_hat_wav = reconstruct_waveform(m2_hat)
 
         self.writer.add_audio(
             tag='Generated/target_wav', snd_tensor=target_wav,
+            global_step=model.step, sample_rate=hp.sample_rate)
+        self.writer.add_audio(
+            tag='Generated/linear_wav', snd_tensor=m1_hat_wav,
             global_step=model.step, sample_rate=hp.sample_rate)
         self.writer.add_audio(
             tag='Generated/postnet_wav', snd_tensor=m2_hat_wav,
