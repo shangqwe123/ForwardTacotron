@@ -60,7 +60,7 @@ class ForwardTrainer:
 
                 start = time.time()
                 model.train()
-                x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
+                x, m_old, m, dur, lens = x.to(device), m_old.to(device), m.to(device), dur.to(device), lens.to(device)
 
                 m1_hat, m2_hat, dur_hat = model(x, m, dur)
 
@@ -113,8 +113,8 @@ class ForwardTrainer:
         m_val_loss = 0
         dur_val_loss = 0
         device = next(model.parameters()).device
-        for i, (x, m, ids, lens, dur) in enumerate(val_set, 1):
-            x, m, dur, lens = x.to(device), m.to(device), dur.to(device), lens.to(device)
+        for i, (x, m_old, m, ids, lens, dur) in enumerate(val_set, 1):
+            x, m_old, m, dur, lens = x.to(device), m_old.to(device), m.to(device), dur.to(device), lens.to(device)
             with torch.no_grad():
                 m1_hat, m2_hat, dur_hat = model(x, m, dur)
                 m1_loss = self.l1_loss(m1_hat, m, lens)
