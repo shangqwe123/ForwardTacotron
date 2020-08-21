@@ -134,6 +134,7 @@ class ForwardTrainer:
         m1_hat = np_now(m1_hat)[0, :600, :]
         m2_hat = np_now(m2_hat)[0, :600, :]
         m = np_now(m)[0, :600, :]
+        m_old = np_now(m_old)[0, :600, :]
 
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)
