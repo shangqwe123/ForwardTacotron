@@ -138,7 +138,9 @@ class ForwardTrainer:
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)
         m_fig = plot_mel(m)
+        m_old_fig = plot_mel(m_old)
 
+        self.writer.add_figure('Ground_Truth_Aligned/target_old', m_old_fig, model.step)
         self.writer.add_figure('Ground_Truth_Aligned/target', m_fig, model.step)
         self.writer.add_figure('Ground_Truth_Aligned/linear', m1_hat_fig, model.step)
         self.writer.add_figure('Ground_Truth_Aligned/postnet', m2_hat_fig, model.step)
