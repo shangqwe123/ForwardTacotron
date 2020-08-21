@@ -3,6 +3,7 @@ from random import Random
 
 from utils.display import *
 from utils.dsp import *
+from utils.dsp_old import melspectrogram as melspectrogram_old
 from utils import hparams as hp
 from multiprocessing import Pool, cpu_count
 from utils.paths import Paths
@@ -42,18 +43,20 @@ def convert_file(path: Path):
     peak = np.abs(y).max()
     if hp.peak_norm or peak > 1.0:
         y /= peak
+    mel_old = melspectrogram_old(y)
     mel = melspectrogram(y)
     if hp.voc_mode == 'RAW':
         quant = encode_mu_law(y, mu=2**hp.bits) if hp.mu_law else float_2_label(y, bits=hp.bits)
     elif hp.voc_mode == 'MOL':
         quant = float_2_label(y, bits=16)
 
-    return mel.astype(np.float32), quant.astype(np.int64)
+    return mel_old.astype(np.float32), mel.astype(np.float32), quant.astype(np.int64)
 
 
 def process_wav(path: Path):
     wav_id = path.stem
-    m, x = convert_file(path)
+    m_ole, m, x = convert_file(path)
+    np.save(paths.mel_old/f'{wav_id}.npy', m, allow_pickle=False)
     np.save(paths.mel/f'{wav_id}.npy', m, allow_pickle=False)
     np.save(paths.quant/f'{wav_id}.npy', x, allow_pickle=False)
     text = text_dict[wav_id]

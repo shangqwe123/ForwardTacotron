@@ -11,6 +11,7 @@ class Paths:
         self.data = Path(data_path).expanduser().resolve()
         self.quant = self.data/'quant'
         self.mel = self.data/'mel'
+        self.mel_old = self.data/'mel_old'
         self.gta = self.data/'gta'
         self.alg = self.data/'alg'
 

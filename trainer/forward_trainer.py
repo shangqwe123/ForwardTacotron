@@ -55,7 +55,7 @@ class ForwardTrainer:
         duration_avg = Averager()
         device = next(model.parameters()).device  # use same device as model parameters
         for e in range(1, epochs + 1):
-            for i, (x, m, ids, lens, dur) in enumerate(session.train_set, 1):
+            for i, (x, m_old, m, ids, lens, dur) in enumerate(session.train_set, 1):
 
                 start = time.time()
                 model.train()
@@ -63,7 +63,7 @@ class ForwardTrainer:
 
                 m1_hat, m2_hat, dur_hat = model(x, m, dur)
 
-                m1_loss = self.l1_loss(m1_hat, m, lens)
+                m1_loss = self.l1_loss(m1_hat, m_old, lens)
                 m2_loss = self.l1_loss(m2_hat, m, lens)
 
                 dur_loss = F.l1_loss(dur_hat, dur)
@@ -127,8 +127,8 @@ class ForwardTrainer:
     def generate_plots(self, model: ForwardTacotron, session: TTSSession) -> None:
         model.eval()
         device = next(model.parameters()).device
-        x, m, ids, lens, dur = session.val_sample
-        x, m, dur = x.to(device), m.to(device), dur.to(device)
+        x, m_old, m, ids, lens, dur = session.val_sample
+        x, m_old, m, dur = x.to(device), m_old.to(device), m.to(device), dur.to(device)
 
         m1_hat, m2_hat, dur_hat = model(x, m, dur)
         m1_hat = np_now(m1_hat)[0, :600, :]

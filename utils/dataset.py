@@ -178,10 +178,11 @@ class ForwardDataset(Dataset):
         item_id = self.metadata[index]
         text = self.text_dict[item_id]
         x = text_to_sequence(text)
+        mel_old = np.load(self.path/'mel_old'/f'{item_id}.npy')
         mel = np.load(self.path/'mel'/f'{item_id}.npy')
         mel_len = mel.shape[-1]
         dur = np.load(self.path/'alg'/f'{item_id}.npy')
-        return x, mel, item_id, mel_len, dur
+        return x, mel_old, mel, item_id, mel_len, dur
 
     def __len__(self):
         return len(self.metadata)
@@ -204,21 +205,23 @@ def collate_tts(batch, r):
     max_spec_len = max(spec_lens) + 1
     if max_spec_len % r != 0:
         max_spec_len += r - max_spec_len % r
-    mel = [pad2d(x[1], max_spec_len) for x in batch]
+    mel_old = [pad2d(x[1], max_spec_len) for x in batch]
+    mel_old = np.stack(mel_old)
+    mel = [pad2d(x[2], max_spec_len) for x in batch]
     mel = np.stack(mel)
-    ids = [x[2] for x in batch]
-    mel_lens = [x[3] for x in batch]
+    ids = [x[3] for x in batch]
+    mel_lens = [x[4] for x in batch]
     mel_lens = torch.tensor(mel_lens)
     chars = torch.tensor(chars).long()
     mel = torch.tensor(mel)
     # additional durations for forward
-    if len(batch[0]) > 4:
-        dur = [pad1d(x[4][:max_x_len], max_x_len) for x in batch]
+    if len(batch[0]) > 5:
+        dur = [pad1d(x[5][:max_x_len], max_x_len) for x in batch]
         dur = np.stack(dur)
         dur = torch.tensor(dur).float()
-        return chars, mel, ids, mel_lens, dur
+        return chars, mel_old, mel, ids, mel_lens, dur
     else:
-        return chars, mel, ids, mel_lens
+        return chars, mel_old, mel, ids, mel_lens
 
 
 class BinnedLengthSampler(Sampler):
