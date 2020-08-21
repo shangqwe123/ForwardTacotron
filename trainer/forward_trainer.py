@@ -16,7 +16,7 @@ from utils.dataset import get_tts_datasets
 from utils.decorators import ignore_exception
 from utils.display import stream, simple_table, plot_mel
 from utils.dsp import reconstruct_waveform, np_now
-from utils.dsp_old import reconstruct_waveform as reconstruct_waveform_old
+from utils.dsp_old import reconstruct_waveform as reconstruct_waveform_old, rescale_mel
 from utils.paths import Paths
 
 
@@ -133,9 +133,11 @@ class ForwardTrainer:
 
         m1_hat, m2_hat, dur_hat = model(x, m, dur)
         m1_hat = np_now(m1_hat)[0, :600, :]
+        m1_hat = rescale_mel(m1_hat)
         m2_hat = np_now(m2_hat)[0, :600, :]
         m = np_now(m)[0, :600, :]
         m_old = np_now(m_old)[0, :600, :]
+        m_old = rescale_mel(m_old)
 
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)
@@ -158,6 +160,7 @@ class ForwardTrainer:
             global_step=model.step, sample_rate=hp.sample_rate)
 
         m1_hat, m2_hat, dur_hat = model.generate(x[0].tolist())
+        m1_hat = rescale_mel(m1_hat)
         m1_hat_fig = plot_mel(m1_hat)
         m2_hat_fig = plot_mel(m2_hat)
 
