@@ -55,8 +55,8 @@ def convert_file(path: Path):
 
 def process_wav(path: Path):
     wav_id = path.stem
-    m_ole, m, x = convert_file(path)
-    np.save(paths.mel_old/f'{wav_id}.npy', m, allow_pickle=False)
+    m_old, m, x = convert_file(path)
+    np.save(paths.mel_old/f'{wav_id}.npy', m_old, allow_pickle=False)
     np.save(paths.mel/f'{wav_id}.npy', m, allow_pickle=False)
     np.save(paths.quant/f'{wav_id}.npy', x, allow_pickle=False)
     text = text_dict[wav_id]
