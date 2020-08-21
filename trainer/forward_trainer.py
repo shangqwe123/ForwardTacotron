@@ -151,6 +151,7 @@ class ForwardTrainer:
 
         m2_hat_wav = reconstruct_waveform(m2_hat)
         target_wav = reconstruct_waveform(m)
+        target_old_wav = reconstruct_waveform_old(m_old)
 
         self.writer.add_audio(
             tag='Ground_Truth_Aligned/target_wav', snd_tensor=target_wav,
@@ -173,6 +174,9 @@ class ForwardTrainer:
 
         self.writer.add_audio(
             tag='Generated/target_wav', snd_tensor=target_wav,
+            global_step=model.step, sample_rate=hp.sample_rate)
+        self.writer.add_audio(
+            tag='Generated/target_old_wav', snd_tensor=target_old_wav,
             global_step=model.step, sample_rate=hp.sample_rate)
         self.writer.add_audio(
             tag='Generated/linear_wav', snd_tensor=m1_hat_wav,

@@ -213,8 +213,8 @@ def collate_tts(batch, r):
     mel_lens = [x[4] for x in batch]
     mel_lens = torch.tensor(mel_lens)
     chars = torch.tensor(chars).long()
-    mel_old = torch.tensor(mel_old)
     mel_old = (mel_old * 8.) - 4.
+    mel_old = torch.tensor(mel_old)
     mel = torch.tensor(mel)
     # additional durations for forward
     if len(batch[0]) > 5:
