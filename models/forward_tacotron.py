@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
-from models.tacotron import CBHG
+from models.tacotron import CBHG, PreNet
 
 
 class LengthRegulator(nn.Module):
@@ -102,6 +102,7 @@ class ForwardTacotron(nn.Module):
         self.dur_pred = DurationPredictor(2*prenet_dims,
                                           conv_dims=durpred_conv_dims)
 
+        self.squeeze_net = PreNet(embed_dims, fc1_dims=embed_dims, fc2_dims=embed_dims, dropout=0.5)
         self.prenet = CBHG(K=prenet_k,
                            in_channels=embed_dims,
                            channels=prenet_dims,
@@ -126,7 +127,7 @@ class ForwardTacotron(nn.Module):
             self.step += 1
 
         x = self.embedding(x)
-
+        x = self.squeeze_net(x)
         x = x.transpose(1, 2)
         x = self.prenet(x)
         dur_hat = self.dur_pred(x)
@@ -154,6 +155,7 @@ class ForwardTacotron(nn.Module):
         x = torch.as_tensor(x, dtype=torch.long, device=device).unsqueeze(0)
 
         x = self.embedding(x)
+        x = self.squeeze_net(x)
 
         x = x.transpose(1, 2)
         x = self.prenet(x)
