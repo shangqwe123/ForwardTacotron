@@ -171,7 +171,7 @@ class Attention(nn.Module):
 
 
 class LSA(nn.Module):
-    def __init__(self, attn_dim, kernel_size=31, filters=32):
+    def __init__(self, attn_dim, kernel_size=31, filters=32, window_left=0, window_right=2):
         super().__init__()
         self.conv = nn.Conv1d(2, filters, padding=(kernel_size - 1) // 2, kernel_size=kernel_size, bias=False)
         self.L = nn.Linear(filters, attn_dim, bias=True)
@@ -179,16 +179,22 @@ class LSA(nn.Module):
         self.v = nn.Linear(attn_dim, 1, bias=False)
         self.cumulative = None
         self.attention = None
+        self.t_max = None
+        self.window_left = window_left
+        self.window_right = window_right
 
     def init_attention(self, encoder_seq_proj):
         device = next(self.parameters()).device  # use same device as parameters
         b, t, c = encoder_seq_proj.size()
         self.cumulative = torch.zeros(b, t, device=device)
         self.attention = torch.zeros(b, t, device=device)
+        self.t_max = torch.zeros(b, device=device)
 
     def forward(self, encoder_seq_proj, query, t):
+        device = next(self.parameters()).device  # use same device as parameters
 
-        if t == 0: self.init_attention(encoder_seq_proj)
+        if t == 0:
+            self.init_attention(encoder_seq_proj)
 
         processed_query = self.W(query).unsqueeze(1)
 
@@ -200,12 +206,25 @@ class LSA(nn.Module):
 
         # Smooth Attention
         #scores = torch.sigmoid(u) / torch.sigmoid(u).sum(dim=1, keepdim=True)
+
+        b, tlen, _ = encoder_seq_proj.size()
+        scores_mask = torch.ones(b, tlen, device=device).float() * 1e9
+        for i in range(b):
+            left = max(self.t_max[i]-self.window_left, 0)
+            right = min(self.t_max[i]+self.window_right, tlen)
+            scores_mask[i, int(left):int(right)] = 0
+
+        u = u - scores_mask
+
         scores = F.softmax(u, dim=1)
+        values, indices = scores.max(1)
+        self.t_max = indices
+
         self.attention = scores
         self.cumulative += self.attention
 
-        values, indices = scores.max(1)
-        print(f'{t} {indices}')
+
+        #print(f'{t} {indices}')
 
         return scores.unsqueeze(-1).transpose(1, 2)
 
