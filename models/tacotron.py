@@ -205,7 +205,7 @@ class LSA(nn.Module):
         u = u.squeeze(-1)
 
         b, tlen, _ = encoder_seq_proj.size()
-        t_range = torch.arange(0, tlen-1, device=device)
+        t_range = torch.arange(0, tlen, device=device)
         diff = (t_range[None, :] - self.t_max[:, None]) ** 2
         u = u - diff / self.smooth_factor
 
