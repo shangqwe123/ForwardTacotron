@@ -171,8 +171,9 @@ class Attention(nn.Module):
 
 
 class LSA(nn.Module):
-    def __init__(self, attn_dim, kernel_size=31, filters=32, window_left=5, window_right=5):
+    def __init__(self, attn_dim, kernel_size=31, filters=32, smooth_factor=10.):
         super().__init__()
+        print(f'LSA using smooth_factor of {smooth_factor}')
         self.conv = nn.Conv1d(2, filters, padding=(kernel_size - 1) // 2, kernel_size=kernel_size, bias=False)
         self.L = nn.Linear(filters, attn_dim, bias=True)
         self.W = nn.Linear(attn_dim, attn_dim, bias=True)
@@ -180,8 +181,7 @@ class LSA(nn.Module):
         self.cumulative = None
         self.attention = None
         self.t_max = None
-        self.window_left = window_left
-        self.window_right = window_right
+        self.smooth_factor = smooth_factor
 
     def init_attention(self, encoder_seq_proj):
         device = next(self.parameters()).device  # use same device as parameters
@@ -207,7 +207,7 @@ class LSA(nn.Module):
         b, tlen, _ = encoder_seq_proj.size()
         t_range = torch.range(0, tlen-1, device=device)
         diff = (t_range[None, :] - self.t_max[None, :]) ** 2
-        u = u - diff / 10.
+        u = u - diff / self.smooth_factor
 
         scores = F.softmax(u, dim=1)
         values, indices = scores.max(1)
@@ -226,17 +226,18 @@ class Decoder(nn.Module):
     # Class variable because its value doesn't change between classes
     # yet ought to be scoped by class because its a property of a Decoder
     max_r = 20
-    def __init__(self, n_mels, decoder_dims, lstm_dims):
+    def __init__(self, n_mels, decoder_dims, lstm_dims, smooth_factor=10.):
         super().__init__()
         self.register_buffer('r', torch.tensor(1, dtype=torch.int))
         self.n_mels = n_mels
         self.prenet = PreNet(n_mels)
-        self.attn_net = LSA(decoder_dims)
+        self.attn_net = LSA(decoder_dims, smooth_factor=smooth_factor)
         self.attn_rnn = nn.GRUCell(decoder_dims + 128, decoder_dims)
         self.rnn_input = nn.Linear(2 * decoder_dims, lstm_dims)
         self.res_rnn1 = nn.LSTMCell(lstm_dims, lstm_dims)
         self.res_rnn2 = nn.LSTMCell(lstm_dims, lstm_dims)
         self.mel_proj = nn.Linear(lstm_dims, n_mels * self.max_r, bias=False)
+
 
     def zoneout(self, prev, current, p=0.1):
         device = next(self.parameters()).device  # Use same device as parameters
@@ -299,7 +300,7 @@ class Decoder(nn.Module):
 
 class Tacotron(nn.Module):
     def __init__(self, embed_dims, num_chars, encoder_dims, decoder_dims, n_mels, fft_bins, postnet_dims,
-                 encoder_K, lstm_dims, postnet_K, num_highways, dropout, stop_threshold, num_speakers, speaker_emb_dim=128):
+                 encoder_K, lstm_dims, postnet_K, num_highways, dropout, stop_threshold, num_speakers, speaker_emb_dim=128, smooth_factor=10.):
         super().__init__()
         self.n_mels = n_mels
 
@@ -308,7 +309,7 @@ class Tacotron(nn.Module):
         self.encoder = Encoder(embed_dims, num_chars, encoder_dims,
                                encoder_K, num_highways, dropout)
         self.encoder_proj = nn.Linear(self.decoder_dims, self.decoder_dims, bias=False)
-        self.decoder = Decoder(n_mels, self.decoder_dims, lstm_dims)
+        self.decoder = Decoder(n_mels, self.decoder_dims, lstm_dims, smooth_factor=smooth_factor)
         self.postnet = CBHG(postnet_K, n_mels, postnet_dims, [256, 80], num_highways)
         self.post_proj = nn.Linear(postnet_dims * 2, fft_bins, bias=False)
 
@@ -317,6 +318,7 @@ class Tacotron(nn.Module):
 
         self.register_buffer('step', torch.zeros(1, dtype=torch.long))
         self.register_buffer('stop_threshold', torch.tensor(stop_threshold, dtype=torch.float32))
+
 
     @property
     def r(self):

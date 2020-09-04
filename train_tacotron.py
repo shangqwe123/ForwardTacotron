@@ -48,7 +48,7 @@ def create_align_features(model: Tacotron,
     device = next(model.parameters()).device  # use same device as model parameters
     iters = len(val_set) + len(train_set)
     dataset = itertools.chain(train_set, val_set)
-    for i, (s_id, semb, x, mels, ids, x_lens, mel_lens) in enumerate(dataset, 1):
+    for i, (s_id, semb, x, mels, ids, x_lens, mel_lens) in enumerate(val_set, 1):
         x, mels, semb = x.to(device), mels.to(device), semb.to(device)
         with torch.no_grad():
             _, _, attn = model(x, mels, semb)
@@ -59,7 +59,7 @@ def create_align_features(model: Tacotron,
         for b in range(attn.shape[0]):
             # fix random jumps in attention
             fig = plot_attention(attn[b, :])
-            plt.savefig(f'/tmp/att/{ids[b]}_window_gauss_10.png')
+            plt.savefig(f'/tmp/att/{ids[b]}_gauss_10.png')
             plt.close(fig)
 
             for j in range(1, argmax.shape[1]):
