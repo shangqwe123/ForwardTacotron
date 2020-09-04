@@ -115,6 +115,7 @@ if __name__ == '__main__':
                          stop_threshold=hp.tts_stop_threshold,
                          num_speakers=hp.max_num_speakers,
                          speaker_emb_dim=hp.speaker_emb_dim,
+                         smooth_factor=5.,
                          ).to(device)
 
     tts_load_path = tts_weights if tts_weights else paths.tts_latest_weights
@@ -122,7 +123,8 @@ if __name__ == '__main__':
 
     # get speaker embedding
     voice_encoder = VoiceEncoder()
-    sample_files = list(Path('/Users/cschaefe/datasets/audio_data/Cutted_merged').glob('**/*.wav'))[:10]
+    #sample_files = list(Path('/Users/cschaefe/datasets/audio_data/Cutted_merged').glob('**/*.wav'))[:10]
+    sample_files = list(Path('/Users/cschaefe/datasets/LJSpeech/LJSpeech-1.1/wavs').glob('**/*.wav'))[:10]
     sample_wavs = [preprocess_wav(w) for w in sample_files]
     semb = voice_encoder.embed_speaker(sample_wavs)
 
@@ -156,7 +158,7 @@ if __name__ == '__main__':
     for i, x in enumerate(inputs, 1):
 
         print(f'\n| Generating {i}/{len(inputs)}')
-        _, m, attention = tts_model.generate(x, semb)
+        _, m, attention = tts_model.generate(x, semb, steps=500)
         if args.vocoder == 'griffinlim':
             v_type = args.vocoder
         elif args.vocoder == 'wavernn' and args.batched:

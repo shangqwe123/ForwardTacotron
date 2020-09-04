@@ -48,7 +48,7 @@ def create_align_features(model: Tacotron,
     device = next(model.parameters()).device  # use same device as model parameters
     iters = len(val_set) + len(train_set)
     dataset = itertools.chain(train_set, val_set)
-    for i, (s_id, semb, x, mels, ids, x_lens, mel_lens) in enumerate(val_set, 1):
+    for i, (s_id, semb, x, mels, ids, x_lens, mel_lens) in enumerate(dataset, 1):
         x, mels, semb = x.to(device), mels.to(device), semb.to(device)
         with torch.no_grad():
             _, _, attn = model(x, mels, semb)
