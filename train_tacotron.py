@@ -48,7 +48,7 @@ def create_align_features(model: Tacotron,
     device = next(model.parameters()).device  # use same device as model parameters
     iters = len(val_set) + len(train_set)
     dataset = itertools.chain(train_set, val_set)
-    for i, (s_id, semb, x, mels, ids, x_lens, mel_lens) in enumerate(dataset, 1):
+    for i, (s_id, semb, x, mels, ids, x_lens, mel_lens) in enumerate(val_set, 1):
         x, mels, semb = x.to(device), mels.to(device), semb.to(device)
         with torch.no_grad():
             _, _, attn = model(x, mels, semb)
@@ -58,15 +58,19 @@ def create_align_features(model: Tacotron,
         mel_counts = np.zeros(shape=(bs, chars), dtype=np.int32)
         for b in range(attn.shape[0]):
             # fix random jumps in attention
-            fig = plot_attention(attn[b, :])
-            plt.savefig(f'/tmp/att/{ids[b]}_gauss_10.png')
-            plt.close(fig)
-
+            avg_dist = 0
             for j in range(1, argmax.shape[1]):
                 if abs(argmax[b, j] - argmax[b, j-1]) > 10:
                     argmax[b, j] = argmax[b, j-1]
+                dist = (argmax[b, j] - argmax[b, j-1])
+                dist = dist if dist > 1 else 0.
+                avg_dist += dist ** 2
+            avg_dist /= float(argmax.shape[1])
             count = np.bincount(argmax[b, :mel_lens[b]])
             mel_counts[b, :len(count)] = count[:len(count)]
+            fig = plot_attention(attn[b, :])
+            plt.savefig(f'/tmp/att/{ids[b]}_dist_{avg_dist:#.2}.png')
+            plt.close(fig)
 
         for j, item_id in enumerate(ids):
             print(mel_counts[j, :])
@@ -120,6 +124,7 @@ if __name__ == '__main__':
                      stop_threshold=hp.tts_stop_threshold,
                      num_speakers=hp.max_num_speakers,
                      speaker_emb_dim=hp.speaker_emb_dim,
+                     smooth_factor=1e10,
                      ).to(device)
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
