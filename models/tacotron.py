@@ -171,7 +171,7 @@ class Attention(nn.Module):
 
 
 class LSA(nn.Module):
-    def __init__(self, attn_dim, kernel_size=31, filters=32, window_left=0, window_right=2):
+    def __init__(self, attn_dim, kernel_size=31, filters=32, window_left=5, window_right=5):
         super().__init__()
         self.conv = nn.Conv1d(2, filters, padding=(kernel_size - 1) // 2, kernel_size=kernel_size, bias=False)
         self.L = nn.Linear(filters, attn_dim, bias=True)
@@ -204,17 +204,10 @@ class LSA(nn.Module):
         u = self.v(torch.tanh(processed_query + encoder_seq_proj + processed_loc))
         u = u.squeeze(-1)
 
-        # Smooth Attention
-        #scores = torch.sigmoid(u) / torch.sigmoid(u).sum(dim=1, keepdim=True)
-
         b, tlen, _ = encoder_seq_proj.size()
-        scores_mask = torch.ones(b, tlen, device=device).float() * 1e9
-        for i in range(b):
-            left = max(self.t_max[i]-self.window_left, 0)
-            right = min(self.t_max[i]+self.window_right, tlen)
-            scores_mask[i, int(left):int(right)] = 0
-
-        u = u - scores_mask
+        t_range = torch.range(0, tlen-1, device=device)
+        diff = (t_range[None, :] - self.t_max[None, :]) ** 2
+        u = u - diff / 10.
 
         scores = F.softmax(u, dim=1)
         values, indices = scores.max(1)
