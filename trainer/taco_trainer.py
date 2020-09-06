@@ -59,7 +59,7 @@ class TacoTrainer:
                 model.train()
                 x, semb, m, s_id = x.to(device), semb.to(device), m.to(device), s_id.to(device)
 
-                m1_hat, m2_hat, attention = model(x, m, semb)
+                m1_hat, m2_hat, attention = model(x, m, s_id)
 
                 m1_loss = F.l1_loss(m1_hat, m)
                 m2_loss = F.l1_loss(m2_hat, m)
@@ -108,7 +108,7 @@ class TacoTrainer:
             x, semb, m, s_id = x.to(device), semb.to(device), m.to(device), s_id.to(device)
 
             with torch.no_grad():
-                m1_hat, m2_hat, attention = model(x, m, semb)
+                m1_hat, m2_hat, attention = model(x, m, s_id)
                 m1_loss = F.l1_loss(m1_hat, m)
                 m2_loss = F.l1_loss(m2_hat, m)
                 val_loss += m1_loss.item() + m2_loss.item()
@@ -126,7 +126,7 @@ class TacoTrainer:
         speaker_token_dict = unpickle_binary(self.paths.data / 'speaker_token_dict.pkl')
         token_speaker_dict = {v: k for k, v in speaker_token_dict.items()}
         speaker_ids = sorted(list(speaker_emb_dict.keys()))[:20]
-        embeddings = [speaker_emb_dict[s_id] for s_id in speaker_ids]
+        embeddings = model.speaker_embedding(s_id)
         cos_mat = cosine_similarity(embeddings)
         np.fill_diagonal(cos_mat, 0)
         cos_mat_fig = plot_cos_matrix(cos_mat, labels=speaker_ids)
@@ -135,7 +135,7 @@ class TacoTrainer:
         for idx in range(len(hp.val_speaker_ids)):
             x_len = x_lens[idx]
             m_len = m_lens[idx]
-            m1_hat, m2_hat, att = model(x[idx:idx+1, :x_len], m[idx:idx+1, :, :m_len], semb[idx:idx+1])
+            m1_hat, m2_hat, att = model(x[idx:idx+1, :x_len], m[idx:idx+1, :, :m_len], s_id[idx:idx+1])
             att_np = np_now(att)
             m1_hat_np = np_now(m1_hat)
             m2_hat_np = np_now(m2_hat)
