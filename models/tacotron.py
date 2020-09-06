@@ -341,6 +341,7 @@ class Tacotron(nn.Module):
         # unnecessary matmuls in the decoder loop
         encoder_seq = self.encoder(x)
         speaker_emb = self.speaker_embedding(sp_id)[:, None, :]
+        speaker_emb = speaker_emb.repeat(1, encoder_seq.shape[1], 1)
         encoder_seq = torch.cat([encoder_seq, speaker_emb], dim=2)
         encoder_seq_proj = self.encoder_proj(encoder_seq)
 
@@ -399,6 +400,7 @@ class Tacotron(nn.Module):
         # unnecessary matmuls in the decoder loop
         encoder_seq = self.encoder(x)
         speaker_emb = self.speaker_embedding(sp_id)[:, None, :]
+        speaker_emb = speaker_emb.repeat(1, encoder_seq.shape[1], 1)
         encoder_seq = torch.cat([encoder_seq, speaker_emb], dim=2)
         encoder_seq_proj = self.encoder_proj(encoder_seq)
 

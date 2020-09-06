@@ -126,7 +126,7 @@ class TacoTrainer:
         speaker_token_dict = unpickle_binary(self.paths.data / 'speaker_token_dict.pkl')
         token_speaker_dict = {v: k for k, v in speaker_token_dict.items()}
         speaker_ids = sorted(list(speaker_emb_dict.keys()))[:20]
-        embeddings = model.speaker_embedding(s_id)
+        embeddings = model.speaker_embedding(s_id).detach().cpu().numpy()
         cos_mat = cosine_similarity(embeddings)
         np.fill_diagonal(cos_mat, 0)
         cos_mat_fig = plot_cos_matrix(cos_mat, labels=speaker_ids)
@@ -168,7 +168,7 @@ class TacoTrainer:
                 tag=f'Ground_Truth_Aligned_{idx}_SID_{target_sid}/postnet_wav', snd_tensor=m2_hat_wav,
                 global_step=model.step, sample_rate=hp.sample_rate)
 
-            m1_hat, m2_hat, att = model.generate(x[idx].tolist(), gen_semb, steps=m_lens[idx] + 20)
+            m1_hat, m2_hat, att = model.generate(x[idx].tolist(), gen_sid, steps=m_lens[idx] + 20)
             att_fig = plot_attention(att)
             m1_hat_fig = plot_mel(m1_hat)
             m2_hat_fig = plot_mel(m2_hat)
