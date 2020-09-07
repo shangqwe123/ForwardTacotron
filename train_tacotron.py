@@ -61,10 +61,6 @@ def create_align_features(model: Tacotron,
             fig = plot_attention(attn[b, :])
             plt.savefig(f'/tmp/att/{ids[b]}.png')
             plt.close(fig)
-
-            for j in range(1, argmax.shape[1]):
-                if abs(argmax[b, j] - argmax[b, j-1]) > 10:
-                    argmax[b, j] = argmax[b, j-1]
             count = np.bincount(argmax[b, :mel_lens[b]])
             mel_counts[b, :len(count)] = count[:len(count)]
 
