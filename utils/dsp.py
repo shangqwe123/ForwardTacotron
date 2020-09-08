@@ -121,7 +121,7 @@ def reconstruct_waveform(mel, n_iter=32):
 
 def trim_long_silences(wav):
     int16_max = (2 ** 15) - 1
-    samples_per_window = (hp.vad_window_length * hp.sample_rate) // 1000
+    samples_per_window = (hp.vad_window_length * hp.vad_sample_rate) // 1000
     wav = wav[:len(wav) - (len(wav) % samples_per_window)]
     pcm_wave = struct.pack("%dh" % len(wav), *(np.round(wav * int16_max)).astype(np.int16))
     voice_flags = []
@@ -129,7 +129,7 @@ def trim_long_silences(wav):
     for window_start in range(0, len(wav), samples_per_window):
         window_end = window_start + samples_per_window
         voice_flags.append(vad.is_speech(pcm_wave[window_start * 2:window_end * 2],
-                                         sample_rate=hp.sample_rate))
+                                         sample_rate=hp.vad_sample_rate))
     voice_flags = np.array(voice_flags)
     def moving_average(array, width):
         array_padded = np.concatenate((np.zeros((width - 1) // 2), array, np.zeros(width // 2)))

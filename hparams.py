@@ -29,16 +29,16 @@ bits = 9                            # bit depth of signal
 mu_law = True                       # Recommended to suppress noise if using raw bits in hp.voc_mode below
 peak_norm = False                   # Normalise to the peak of each wav file
 
-sampling_rate = 16000
 partials_n_frames = 160     # 1600 ms
 vad_window_length = 30  # In milliseconds
 vad_moving_average_width = 8
 vad_max_silence_length = 6
+vad_sample_rate = 16000
 
 # GENERAL TRAINING ----------------------------------------------------------------------------------------------------------#
 
 seed = 42
-n_val = 500                         # num validatino samples
+n_val = 50                         # num validatino samples
 min_speaker_count = 2 # min count of samples per speaker
 val_speaker_ids = ['p226', 'p227', 'p228', 'p229'] # use these speakers for generating plots
 

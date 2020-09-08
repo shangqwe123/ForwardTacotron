@@ -1,7 +1,4 @@
-from pathlib import Path
-
 import torch
-from resemblyzer import VoiceEncoder, preprocess_wav
 
 from models.fatchord_version import WaveRNN
 from models.forward_tacotron import ForwardTacotron
