@@ -348,6 +348,8 @@ class Tacotron(nn.Module):
         mel_outputs, attn_scores = [], []
         b, _, t_len = m.size()
         if self.training and self.step > 50_000:
+            if self.step == 50_000:
+                print('Switching to mask!')
             mask = (torch.rand(b, t_len, device=device) < 0.5).float()
             avg_m = torch.mean(m)
             m = m * mask[:, None, :] + avg_m * (1. - mask[:, None, :])
