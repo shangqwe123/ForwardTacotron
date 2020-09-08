@@ -1,22 +1,18 @@
-import glob
+import argparse
 from collections import Counter
-from random import Random
-from resemblyzer import VoiceEncoder, preprocess_wav, trim_long_silences
+from multiprocessing import Pool, cpu_count
+from pathlib import Path
+
 import pandas as pd
+from resemblyzer import VoiceEncoder, preprocess_wav
 from sklearn.model_selection import train_test_split
 
 from utils.display import *
 from utils.dsp import *
-from utils import hparams as hp
-from multiprocessing import Pool, cpu_count
-from utils.paths import Paths
-import pickle
-import argparse
-
-from utils.text import clean_text
-from utils.text.recipes import ljspeech, libri_tts
 from utils.files import get_files, pickle_binary
-from pathlib import Path
+from utils.paths import Paths
+from utils.text import clean_text
+from utils.text.recipes import libri_tts
 
 
 # Helper functions for argument types
@@ -44,13 +40,8 @@ path = args.path
 voice_encoder = VoiceEncoder()
 
 
-def trim_silence(wav):
-    return librosa.effects.trim(wav, top_db=hp.trim_silence_top_db, frame_length=2048, hop_length=512)
-
-
 def convert_file(path: Path):
     y = load_wav(path)
-    #y, _ = trim_silence(y)
     y = trim_long_silences(y)
     peak = np.abs(y).max()
     if hp.peak_norm or peak > 1.0:
@@ -70,7 +61,6 @@ def process_wav(path: Path):
     try:
         wav_id = path.stem
         m, x, y_p = convert_file(path)
-        librosa.effects.trim(y_p, top_db=40, frame_length=2048, hop_length=512)
         np.save(paths.mel/f'{wav_id}.npy', m, allow_pickle=False)
         np.save(paths.quant/f'{wav_id}.npy', x, allow_pickle=False)
         text = text_dict[wav_id]
