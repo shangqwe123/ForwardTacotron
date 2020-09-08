@@ -38,7 +38,7 @@ vad_sample_rate = 16000
 # GENERAL TRAINING ----------------------------------------------------------------------------------------------------------#
 
 seed = 42
-n_val = 50                         # num validatino samples
+n_val = 500                         # num validatino samples
 min_speaker_count = 2 # min count of samples per speaker
 val_speaker_ids = ['p226', 'p227', 'p228', 'p229'] # use these speakers for generating plots
 
