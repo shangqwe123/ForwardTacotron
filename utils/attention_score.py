@@ -2,12 +2,14 @@ import torch
 
 
 def attention_score(att, x_lens, mel_lens, r=1):
+    att, x_lens, mel_lens = att.detach(), x_lens.detach(), mel_lens.detach()
     device = att.device
     b, t_max, c_max = att.size()
 
     # create mel padding mask
     mel_range = torch.arange(0, t_max, device=device)
-    mask = (mel_range[None, :] < mel_lens[:, None] // r).float()
+    mel_lens = mel_lens // r
+    mask = (mel_range[None, :] < mel_lens[:, None]).float()
 
     # score for how adjacent the attention loc is
     max_loc = torch.argmax(att, dim=2)
