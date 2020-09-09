@@ -8,6 +8,7 @@ from torch.utils.data.dataloader import DataLoader
 from models.tacotron import Tacotron
 from trainer.taco_trainer import TacoTrainer
 from utils import hparams as hp
+from utils.attention_score import attention_score
 from utils.checkpoints import restore_checkpoint
 from utils.dataset import get_tts_datasets
 from utils.display import *
@@ -15,28 +16,6 @@ from utils.dsp import np_now
 from utils.files import unpickle_binary
 from utils.paths import Paths
 from utils.text import phonemes
-
-
-def attention_score(att, x_lens, mel_lens):
-    device = att.device
-    b, t_max, c_max = att.size()
-    mel_range = torch.arange(1, t_max, device=device)
-    mel_mask = (mel_range[None, :] < mel_lens[:, None]).float()
-    x_range = torch.arange(0, c_max, device=device)
-    x_mask = (x_range[None, :] < x_lens[:, None]).float()
-    mel_max = torch.argmax(att, dim=2)
-    mel_max_diff = torch.abs(mel_max[:, 1:] - mel_max[:, :-1])
-    mel_max_diff = (mel_max_diff < 2).float()
-    mel_max_diff = mel_max_diff * mel_mask
-    mel_max_sum = torch.sum(mel_max_diff, dim=1)
-    x_max = torch.argmax(att, dim=1).long()
-    x_max = x_max * x_mask
-    x_coverage = [torch.unique(x_max[i]).size(0) for i in range(b)]
-    x_coverage = torch.tensor(x_coverage, device=device, dtype=torch.float)
-    corr_score = mel_max_sum / (mel_lens - 1)
-    cov_score = x_coverage / x_lens
-    score = corr_score * cov_score
-    return score
 
 
 def create_gta_features(model: Tacotron,
@@ -64,8 +43,8 @@ def create_align_features(model: Tacotron,
                           train_set: DataLoader,
                           val_set: DataLoader,
                           save_path: Path):
-    assert model.r == 1, f'Reduction factor of tacotron must be 1 for creating alignment features! ' \
-                         f'Reduction factor was: {model.r}'
+    #assert model.r == 1, f'Reduction factor of tacotron must be 1 for creating alignment features! ' \
+    #                     f'Reduction factor was: {model.r}'
     model.eval()
     device = next(model.parameters()).device  # use same device as model parameters
     iters = len(val_set) + len(train_set)
@@ -78,7 +57,7 @@ def create_align_features(model: Tacotron,
         bs, chars = attn.shape[0], attn.shape[2]
         argmax = np.argmax(attn[:, :, :], axis=2)
         mel_counts = np.zeros(shape=(bs, chars), dtype=np.int32)
-        score = attention_score(torch.tensor(attn), x_lens, mel_lens)[0]
+        score = attention_score(torch.tensor(attn), x_lens, mel_lens, r=model.r)[0]
         #score = float(score)
         print(f'score {score}')
         for b in range(attn.shape[0]):
