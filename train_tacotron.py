@@ -78,7 +78,6 @@ def create_align_features(model: Tacotron,
         bs, chars = attn.shape[0], attn.shape[2]
         argmax = np.argmax(attn[:, :, :], axis=2)
         mel_counts = np.zeros(shape=(bs, chars), dtype=np.int32)
-        x_lens = torch.ones(1, 1) * x.size(1)
         score = attention_score(torch.tensor(attn), x_lens, mel_lens)[0]
         #score = float(score)
         print(f'score {score}')
