@@ -1,7 +1,7 @@
 import torch
 
 
-def attention_score(att, x_lens, mel_lens):
+def attention_score(att, x_lens, mel_lens, r=1):
     device = att.device
     b, t_max, c_max = att.size()
 
@@ -12,7 +12,7 @@ def attention_score(att, x_lens, mel_lens):
     # score for how adjacent the attention loc is
     max_loc = torch.argmax(att, dim=2)
     max_loc_diff = torch.abs(max_loc[:, 1:] - max_loc[:, :-1])
-    loc_score = (max_loc_diff < 2).float()
+    loc_score = (max_loc_diff >= 0) * (max_loc_diff <= r)
     loc_score = torch.sum(loc_score * mask[:, 1:], dim=1)
     loc_score = loc_score / (mel_lens - 1)
 
@@ -24,6 +24,6 @@ def attention_score(att, x_lens, mel_lens):
     x_coverage = [torch.unique(max_loc_masked[i]).size(0) for i in range(b)]
     x_coverage = torch.tensor(x_coverage, device=device, dtype=torch.float)
     cov_score = x_coverage / torch.min(x_lens, mel_lens)
-    score = loc_score
+    score = loc_score * cov_score
 
     return score

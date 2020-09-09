@@ -62,7 +62,7 @@ class TacoTrainer:
 
                 m1_hat, m2_hat, attention = model(x, m, semb)
 
-                att_score = attention_score(attention, x_lens, mel_lens)
+                att_score = attention_score(attention, x_lens, mel_lens, r=model.r)
                 att_score = torch.mean(att_score)
 
                 m1_loss = F.l1_loss(m1_hat, m)
@@ -119,7 +119,7 @@ class TacoTrainer:
                 m1_loss = F.l1_loss(m1_hat, m)
                 m2_loss = F.l1_loss(m2_hat, m)
                 val_loss += m1_loss.item() + m2_loss.item()
-            att_score = attention_score(attention, x_lens, mel_lens)
+            att_score = attention_score(attention, x_lens, mel_lens, r=model.r)
             att_score = torch.mean(att_score)
             att_score_sum += att_score
 
