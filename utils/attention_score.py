@@ -24,6 +24,6 @@ def attention_score(att, x_lens, mel_lens):
     x_coverage = [torch.unique(max_loc_masked[i]).size(0) for i in range(b)]
     x_coverage = torch.tensor(x_coverage, device=device, dtype=torch.float)
     cov_score = x_coverage / torch.min(x_lens, mel_lens)
-    score = loc_score * cov_score
+    score = loc_score
 
     return score
