@@ -58,7 +58,7 @@ class TacoTrainer:
             for i, (s_id, semb, x, m, ids, x_lens, m_lens) in enumerate(session.train_set, 1):
                 start = time.time()
                 model.train()
-                x, semb, m, s_id = x.to(device), semb.to(device), m.to(device), s_id.to(device)
+                x, semb, m, s_id, x_lens, mel_lens = x.to(device), semb.to(device), m.to(device), s_id.to(device), x_lens.to(device), mel_lens.to(device)
 
                 m1_hat, m2_hat, attention = model(x, m, semb)
 
@@ -111,15 +111,15 @@ class TacoTrainer:
         val_loss = 0
         att_score_sum = 0
         device = next(model.parameters()).device
-        for i, (s_id, semb, x, m, ids, x_lens, m_lens) in enumerate(val_set, 1):
-            x, semb, m, s_id = x.to(device), semb.to(device), m.to(device), s_id.to(device)
+        for i, (s_id, semb, x, m, ids, x_lens, mel_lens) in enumerate(val_set, 1):
+            x, semb, m, s_id, x_lens, mel_lens = x.to(device), semb.to(device), m.to(device), s_id.to(device), x_lens.to(device), mel_lens.to(device)
 
             with torch.no_grad():
                 m1_hat, m2_hat, attention = model(x, m, semb)
                 m1_loss = F.l1_loss(m1_hat, m)
                 m2_loss = F.l1_loss(m2_hat, m)
                 val_loss += m1_loss.item() + m2_loss.item()
-            att_score = attention_score(attention, x_lens, m_lens)
+            att_score = attention_score(attention, x_lens, mel_lens)
             att_score = torch.mean(att_score)
             att_score_sum += att_score
 
