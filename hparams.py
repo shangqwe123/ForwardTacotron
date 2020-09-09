@@ -7,8 +7,8 @@ data_path = 'data/'
 
 # model ids are separate - that way you can use a new tts with an old wavernn and vice versa
 # NB: expect undefined behaviour if models were trained on different DSP settings
-voc_model_id = 'resemblyzer_vctk_trim_mask_raw'
-tts_model_id = 'resemblyzer_vctk_trim_mask_tts'
+voc_model_id = 'resemblyzer_vctk_att_raw'
+tts_model_id = 'resemblyzer_vctk_att_tts'
 
 # set this to True if you are only interested in WaveRNN
 ignore_tts = False
@@ -95,9 +95,9 @@ tts_stop_threshold = -10           # Value below which audio generation ends.
 # Training
 
 tts_schedule = [(10,  1e-3,  10_000,  32),   # progressive training schedule
-                (5,  1e-4, 20_000,  16),   # (r, lr, step, batch_size)
-                (2,  1e-4, 30_000,  8),
-                (1,  1e-4, 50_000,  8)]
+                (5,  1e-4, 15_000,  16),   # (r, lr, step, batch_size)
+                (2,  1e-4, 20_000,  8),
+                (1,  1e-4, 25_000,  8)]
 
 tts_max_mel_len = 1250              # if you have a couple of extremely long spectrograms you might want to use this
 tts_clip_grad_norm = 1.0            # clips the gradient norm to prevent explosion - set to None if not needed
