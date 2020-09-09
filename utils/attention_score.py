@@ -18,6 +18,9 @@ def attention_score(att, x_lens, mel_lens):
 
     # score for coverage of input phonemes
     max_loc_masked = max_loc * mask
+    # account for x padding with another mask
+    x_mask = (max_loc_masked < x_lens[:, None]).float()
+    max_loc_masked = max_loc_masked * x_mask
     x_coverage = [torch.unique(max_loc_masked[i]).size(0) for i in range(b)]
     x_coverage = torch.tensor(x_coverage, device=device, dtype=torch.float)
     cov_score = x_coverage / x_lens
