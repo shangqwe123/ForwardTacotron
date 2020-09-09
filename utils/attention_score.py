@@ -12,7 +12,7 @@ def attention_score(att, x_lens, mel_lens):
     # score for how adjacent the attention loc is
     max_loc = torch.argmax(att, dim=2)
     max_loc_diff = torch.abs(max_loc[:, 1:] - max_loc[:, :-1])
-    loc_score = min(4./(max_loc_diff + 1.)**2, 1.)
+    loc_score = (max_loc_diff < 2).float()
     loc_score = torch.sum(loc_score * mask[1:], dim=1)
     loc_score = loc_score / (mel_lens - 1)
 
