@@ -4,20 +4,23 @@ import torch
 def attention_score(att, x_lens, mel_lens):
     device = att.device
     b, t_max, c_max = att.size()
-    mel_range = torch.arange(1, t_max, device=device)
-    mel_mask = (mel_range[None, :] < mel_lens[:, None]).float()
-    x_range = torch.arange(0, c_max, device=device)
-    x_mask = (x_range[None, :] < x_lens[:, None]).float()
-    mel_max = torch.argmax(att, dim=2)
-    mel_max_diff = torch.abs(mel_max[:, 1:] - mel_max[:, :-1])
-    mel_max_diff = (mel_max_diff < 2).float()
-    mel_max_diff = mel_max_diff * mel_mask
-    mel_max_sum = torch.sum(mel_max_diff, dim=1)
-    x_max = torch.argmax(att, dim=1).long()
-    x_max = x_max * x_mask
-    x_coverage = [torch.unique(x_max[i]).size(0) for i in range(b)]
+
+    # create mel padding mask
+    mel_range = torch.arange(0, t_max, device=device)
+    mask = (mel_range[None, :] < mel_lens[:, None]).float()
+
+    # score for how adjacent the attention loc is
+    max_loc = torch.argmax(att, dim=2)
+    max_loc_diff = torch.abs(max_loc[:, 1:] - max_loc[:, :-1])
+    loc_score = min(4./(max_loc_diff + 1.)**2, 1.)
+    loc_score = torch.sum(loc_score * mask[1:], dim=1)
+    loc_score = loc_score / (mel_lens - 1)
+
+    # score for coverage of input phonemes
+    max_loc_masked = max_loc * mask
+    x_coverage = [torch.unique(max_loc_masked[i]).size(0) for i in range(b)]
     x_coverage = torch.tensor(x_coverage, device=device, dtype=torch.float)
-    corr_score = mel_max_sum / (mel_lens - 1)
     cov_score = x_coverage / x_lens
-    score = corr_score * cov_score
+    score = loc_score * cov_score
+
     return score

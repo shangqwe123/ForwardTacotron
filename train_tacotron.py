@@ -84,7 +84,7 @@ def create_align_features(model: Tacotron,
         for b in range(attn.shape[0]):
             # fix random jumps in attention
             fig = plot_attention(attn[b, :])
-            plt.savefig(f'/tmp/att/{ids[b]}_score_{float(score)}.png')
+            plt.savefig(f'/tmp/att/{ids[b]}_score_new2_{float(score)}.png')
             plt.close(fig)
 
             for j in range(1, argmax.shape[1]):
