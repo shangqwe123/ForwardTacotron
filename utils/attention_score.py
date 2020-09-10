@@ -18,14 +18,11 @@ def attention_score(att, x_lens, mel_lens, r=1):
     loc_score = torch.sum(loc_score * mask[:, 1:], dim=1)
     loc_score = loc_score / (mel_lens - 1)
 
-    # score for coverage of input phonemes
-    max_loc_masked = max_loc * mask
-    # account for x padding with another mask
-    x_mask = (max_loc_masked < x_lens[:, None]).float()
-    max_loc_masked = max_loc_masked * x_mask
-    x_coverage = [torch.unique(max_loc_masked[i]).size(0) for i in range(b)]
-    x_coverage = torch.tensor(x_coverage, device=device, dtype=torch.float)
-    cov_score = x_coverage / torch.min(x_lens, mel_lens)
-    score = loc_score * cov_score
+    sharp_score, inds = att.max(dim=2)
+    sharp_score = torch.mean(sharp_score, dim=1)
+    sharp_score = sharp_score * c_max / 10.
+    sharp_score = 1. - 1./torch.exp(sharp_score)
+
+    score = sharp_score * loc_score
 
     return score
