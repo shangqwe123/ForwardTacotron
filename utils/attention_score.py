@@ -2,7 +2,7 @@ import torch
 
 
 def attention_score(att, x_lens, mel_lens, r=1):
-    att, x_lens, mel_lens = att.detach(), x_lens.detach(), mel_lens.detach()
+    att, x_lens, mel_lens = att.detach()[:], x_lens.detach()[:], mel_lens.detach()[:]
     device = att.device
     b, t_max, c_max = att.size()
 
